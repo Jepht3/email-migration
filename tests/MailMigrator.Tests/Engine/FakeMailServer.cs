@@ -33,6 +33,9 @@ internal sealed class FakeMailServer(string host, string namespacePrefix = "", c
     /// <summary>Sujets que le serveur refuse définitivement (NO).</summary>
     public HashSet<string> RejectedSubjects { get; } = [];
 
+    /// <summary>Nombre de prochains APPEND refusés pour limite de débit (« [LIMIT] … »).</summary>
+    public int ThrottleNextAppends { get; set; }
+
     public int AppendCount { get; private set; }
     public int ConnectCount { get; set; }
 
@@ -57,6 +60,11 @@ internal sealed class FakeMailServer(string host, string namespacePrefix = "", c
     {
         var text = Encoding.UTF8.GetString(raw);
         var subject = text.Split("\r\n")[1]["Subject: ".Length..];
+        if (ThrottleNextAppends > 0)
+        {
+            ThrottleNextAppends--;
+            throw new ImapCommandException(ImapCommandResponse.No, "[LIMIT] Too many commands, try again later");
+        }
         if (RejectedSubjects.Contains(subject))
             throw new ImapCommandException(ImapCommandResponse.No, "[TOOBIG] Message too large");
 

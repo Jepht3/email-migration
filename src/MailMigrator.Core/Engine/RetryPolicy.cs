@@ -15,6 +15,9 @@ public sealed class RetryPolicy
     public TimeSpan InitialDelay { get; init; } = TimeSpan.FromSeconds(1);
     public TimeSpan MaxDelay { get; init; } = TimeSpan.FromSeconds(60);
 
+    /// <summary>Refus pour limite de débit tolérés d'affilée avant d'abandonner (≈ 20 min d'attente cumulée).</summary>
+    public int MaxThrottleAttempts { get; init; } = 6;
+
     /// <summary>Attente injectable (les tests n'attendent pas réellement).</summary>
     public Func<TimeSpan, CancellationToken, Task> Delay { get; init; } = Task.Delay;
 
@@ -41,11 +44,27 @@ public sealed class RetryPolicy
     /// <param name="onRetry">Appelé avant chaque nouvelle tentative (reconnexion).</param>
     public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> operation, Func<int, Exception, CancellationToken, Task> onRetry, CancellationToken cancellationToken)
     {
+        var throttled = 0;
         for (var attempt = 1; ; attempt++)
         {
             try
             {
                 return await operation(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (Connectivity.ImapErrorTranslator.IsThrottling(ex) && throttled < MaxThrottleAttempts && !cancellationToken.IsCancellationRequested)
+            {
+                // Limite de débit : on prévient (régulateur, journal), puis longue attente avant de réessayer.
+                throttled++;
+                attempt--;
+                try
+                {
+                    await onRetry(throttled, ex, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception reconnect) when (reconnect is not OperationCanceledException)
+                {
+                    // Reconnexion refusée elle aussi : nouvel essai après l'attente.
+                }
+                await Delay(ThrottleGovernor.BackoffFor(throttled), cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (IsTransient(ex) && attempt < MaxAttempts && !cancellationToken.IsCancellationRequested)
             {

@@ -29,6 +29,16 @@ public static class ImapErrorTranslator
         "try again later", "server busy", "request is throttled",
     ];
 
+    /// <summary>
+    /// Le serveur limite le débit (« [LIMIT] », « [UNAVAILABLE] », « bandwidth limits », « too many »…) :
+    /// il faut attendre et ralentir, pas abandonner.
+    /// </summary>
+    public static bool IsThrottling(Exception exception)
+    {
+        var text = Flatten(exception).ToLowerInvariant();
+        return ThrottleHints.Any(text.Contains);
+    }
+
     /// <param name="host">Serveur concerné : permet d'adapter le message (Gmail, Microsoft 365…).</param>
     public static ConnectionError Translate(Exception exception, string? host = null)
     {
@@ -74,7 +84,11 @@ public static class ImapErrorTranslator
     {
         var parts = new List<string>();
         for (var e = exception; e is not null; e = e.InnerException)
-            parts.Add($"{e.GetType().Name}: {e.Message}");
+        {
+            // Réponse NO/BAD du serveur : le texte utile (« [LIMIT] … ») est dans ResponseText.
+            var response = e is ImapCommandException { ResponseText: { Length: > 0 } text } && !e.Message.Contains(text) ? $" ({text})" : "";
+            parts.Add($"{e.GetType().Name}: {e.Message}{response}");
+        }
         return string.Join(" → ", parts);
     }
 

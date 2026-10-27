@@ -97,12 +97,25 @@ public sealed class MigrationEngine(IMigrationStore store, IMailboxConnectionFac
         progress.SetStatus(status);
     }
 
-    private static Func<int, Exception, CancellationToken, Task> Reconnect(JobProgress progress, params IMailboxConnection[] mailboxes) =>
+    /// <summary>Régulateur de débit de la tâche (une instance de moteur par exécution).</summary>
+    public ThrottleGovernor Governor { get; } = new();
+
+    private Func<int, Exception, CancellationToken, Task> Reconnect(JobProgress progress, params IMailboxConnection[] mailboxes) =>
         async (attempt, error, ct) =>
         {
+            var lost = mailboxes.Where(m => !m.IsConnected).ToArray();
+            if (Connectivity.ImapErrorTranslator.IsThrottling(error))
+            {
+                // Limite de débit : on ralentit (lots plus petits, pause entre les lots) et on attend.
+                Governor.OnThrottled();
+                progress.Warning($"Le serveur limite le débit — pause de {Formatting.Format.Duration(ThrottleGovernor.BackoffFor(attempt))}, "
+                                 + $"puis reprise au ralenti (lots de {Governor.BatchSize} messages).");
+                _log.LogWarning("Limite de débit ({Count}) : {Reason}", Governor.ThrottleCount, error.Message);
+                foreach (var mailbox in lost) await mailbox.ConnectAsync(ct);
+                return;
+            }
             progress.Warning($"Connexion interrompue ({error.GetType().Name}) — reconnexion, tentative {attempt}…");
             // Une seule connexion tombée : on ne reconnecte que celle-là ; sinon (délai dépassé) les deux.
-            var lost = mailboxes.Where(m => !m.IsConnected).ToArray();
             foreach (var mailbox in lost.Length > 0 ? lost : mailboxes) await mailbox.ConnectAsync(ct);
         };
 
@@ -216,24 +229,31 @@ public sealed class MigrationEngine(IMigrationStore store, IMailboxConnectionFac
         }
         if (skipped.Count > 0) store.SetMessagesStatus(skipped, MessageStatus.Skipped, "Déjà présent dans la destination");
 
-        // 2. Découpage en lots.
-        var batches = new List<List<StoredMessage>>();
-        foreach (var message in toCopy)
+        // 2. Lots formés au fil de l'eau : leur taille suit le régulateur de débit.
+        var queue = new Queue<StoredMessage>(toCopy);
+        List<StoredMessage>? NextBatch()
         {
-            var last = batches.LastOrDefault();
-            if (message.Size > LargeMessage || last is null || last.Count >= BatchMaxMessages
-                || last[0].Size > LargeMessage || last.Sum(m => m.Size) + message.Size > BatchMaxBytes)
-                batches.Add([message]);
-            else last.Add(message);
+            if (queue.Count == 0) return null;
+            var batch = new List<StoredMessage> { queue.Dequeue() };
+            var bytes = batch[0].Size;
+            if (bytes > LargeMessage) return batch;
+            var max = Math.Min(BatchMaxMessages, Governor.BatchSize);
+            while (batch.Count < max && queue.TryPeek(out var m) && m.Size <= LargeMessage && bytes + m.Size <= BatchMaxBytes)
+            {
+                batch.Add(queue.Dequeue());
+                bytes += m.Size;
+            }
+            return batch;
         }
 
         // 3. Téléchargement du lot suivant pendant le dépôt du lot courant.
-        Task<Downloaded>? next = batches.Count > 0 ? DownloadAsync(batches[0]) : null;
+        var first = NextBatch();
+        Task<Downloaded>? next = first is null ? null : DownloadAsync(first);
         try
         {
-            for (var i = 0; i < batches.Count; i++)
+            while (next is not null)
             {
-                await using var current = await next!;
+                await using var current = await next;
                 next = null;
                 if (pause.IsPaused)
                 {
@@ -243,9 +263,14 @@ public sealed class MigrationEngine(IMigrationStore store, IMailboxConnectionFac
                     SetStatus(jobId, progress, JobStatus.Copying);
                 }
                 ct.ThrowIfCancellationRequested();
-                if (i + 1 < batches.Count) next = DownloadAsync(batches[i + 1]);
+                if (Governor.Pause > TimeSpan.Zero) await _retry.Delay(Governor.Pause, ct);
+                if (NextBatch() is { } following) next = DownloadAsync(following);
 
                 await AppendAsync(current);
+                if (Governor.OnSuccess())
+                    progress.Info(Governor.IsSlowedDown
+                        ? $"Le serveur accepte de nouveau : accélération (lots de {Governor.BatchSize} messages)."
+                        : "Débit normal rétabli.");
                 store.SaveElapsed(jobId, progress.Elapsed);
             }
         }

@@ -65,7 +65,7 @@ le logo dans `src/MailMigrator.App/Assets/Logo.xaml`.
 - [x] Étape 3b — moteur de copie d'une tâche : reprise après arrêt, déduplication, reconnexion, pause, SQLite, mots de passe DPAPI
 - [x] Vitesse — copie par lots (un FETCH et un MULTIAPPEND pour 50 messages), téléchargement du lot suivant pendant l'envoi
 - [x] Sauvegarde sur ce PC — en option de la migration directe : boîte → PC (chiffré ou .eml), mise à jour, restauration PC → boîte
-- [ ] Étape 3c — limites de débit (ralentissement automatique)
+- [x] Étape 3c — limites de débit : détection des refus « [LIMIT] / [UNAVAILABLE] / too many », attente de 30 s à 5 min, lots réduits et pause entre lots, puis réaccélération progressive
 - [x] Étape 3d — interface branchée sur le vrai moteur (aperçu réel des dossiers, file de 1 à 5 tâches, reprise au démarrage, réessayer les échecs), notifications Windows
 - [ ] Étape 3e — rapport, vérification finale, exports HTML / CSV
 - [ ] Étape 3f — installeur Inno Setup
