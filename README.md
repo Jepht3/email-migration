@@ -1,45 +1,105 @@
 # LEWEBMAX Mail Migrator
 
-Application Windows (WPF, .NET 8) de migration d'emails IMAP : jusqu'à 5 boîtes en parallèle,
-détection automatique des serveurs, progression détaillée et rapport final.
+Application Windows de migration d'emails IMAP pour les hébergements LEWEBMAX : jusqu'à
+5 boîtes en parallèle, détection automatique des serveurs, progression détaillée en direct,
+rapport final exportable, et sauvegarde sur le PC pour les changements de serveur.
 
-> Projet en cours de développement — voir « Avancement » ci-dessous.
+![Migrations en cours](docs/captures/05-migrations-en-cours-clair.png)
 
-## Prérequis
+## Fonctionnalités
 
-- Windows 10 1809 ou plus récent (Windows 11 recommandé pour l'effet Mica)
-- [SDK .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0) (`winget install Microsoft.DotNet.SDK.8`)
+**Migration directe boîte → boîte**
+- Saisie de 1 à 5 paires source → destination (ou import CSV : `source;mdp source;destination;mdp destination`).
+- Détection IMAP automatique : autoconfig du domaine → base ISPDB Thunderbird → autodiscover → enregistrements MX et préfixes `imap.` / `mail.` ; réglages modifiables à la main.
+- Test de connexion avec messages d'erreur en français (mot de passe refusé, mot de passe d'application requis, serveur injoignable, certificat, IMAP désactivé…).
+- Aperçu réel de la correspondance des dossiers (SPECIAL-USE, noms Sent / Envoyés / Sent Items…, séparateurs `.` et `/`), modifiable.
+- Options : corbeille, spams, plage de dates, dossiers exclus, vérification finale, effacement des mots de passe à la fin.
 
-## Compiler et lancer
+**Moteur**
+- Dossiers, drapeaux (lu, important, répondu, brouillon) et date de réception conservés.
+- Aucun doublon : Message-ID, sinon empreinte date + expéditeur + sujet + taille ; relancer une migration ne copie que les nouveaux messages.
+- Reprise après fermeture ou plantage : l'état de chaque message est enregistré dans SQLite.
+- Copie par lots (un FETCH et un MULTIAPPEND pour 50 messages) avec téléchargement du lot suivant pendant l'envoi.
+- Reconnexion automatique (backoff exponentiel) ; ralentissement automatique quand le serveur limite le débit.
+- Messages volumineux téléchargés par morceaux vers un fichier temporaire.
+- Pause, reprise, annulation par tâche ; 1 à 5 tâches simultanées, les suivantes en file d'attente.
+
+**Sauvegarde sur ce PC** (en complément de la migration directe)
+- Boîte → PC : sauvegarde chiffrée (AES-256 + HMAC, clé protégée par votre session Windows) ou fichiers `.eml` lisibles.
+- Mise à jour : récupère les emails arrivés pendant la propagation DNS.
+- PC → boîte : restauration vers le nouveau serveur, sans doublon, dossiers et rôles conservés.
+- Écran « Sauvegardes locales » : mettre à jour, restaurer, ouvrir, supprimer, ajouter une sauvegarde existante.
+
+**Suivi et rapports**
+- Tableau de bord : anneau de progression global, volume, vitesse, temps restant, courbe du débit ; une carte par tâche avec sa couleur ; panneau de détail avec dossiers et flux d'activité en direct.
+- Rapport : chiffres clés, bilan par dossier, recomptage source / destination avec écarts, liste des messages filtrable, « Réessayer les échecs ».
+- Exports **HTML** (au design de l'application, imprimable, lisible sur mobile) et **CSV** (Excel).
+- Historique de toutes les migrations ; notifications Windows en fin de migration.
+
+**Sécurité**
+- Mots de passe chiffrés avec DPAPI, jamais écrits dans les journaux ; effacés à la fin par défaut.
+- TLS par défaut ; connexion non chiffrée seulement si elle est choisie explicitement, avec avertissement.
+- Une seule instance de l'application à la fois (pas de migration reprise en double).
+
+## Installer l'application
+
+Lancez `LEWEBMAX-MailMigrator-Setup-<version>.exe` (voir « Créer l'installeur »).
+- Installation par utilisateur, **sans droits administrateur**, dans `%LOCALAPPDATA%\Programs\LEWEBMAX\Mail Migrator`.
+- **.NET n'a pas besoin d'être installé** : l'application est autonome.
+- Raccourci dans le menu Démarrer, icône de bureau en option.
+- La désinstallation conserve les données : `%LOCALAPPDATA%\LEWEBMAX\MailMigrator` (historique, journaux) et `Documents\LEWEBMAX` (sauvegardes, rapports).
+
+Configuration minimale : Windows 10 version 1809 (64 bits) ou plus récent ; Windows 11 recommandé (effet Mica).
+
+## Développement
+
+### Prérequis
+- [SDK .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0) : `winget install Microsoft.DotNet.SDK.8`
+- Pour les tests d'intégration : Java (`winget install EclipseAdoptium.Temurin.21.JRE`) — ou Docker
+- Pour l'installeur : Inno Setup 6 (`winget install JRSoftware.InnoSetup`)
+
+### Compiler et lancer
 
 ```bash
 dotnet build MailMigrator.sln
 dotnet run --project src/MailMigrator.App
 ```
 
-## Tests
+Mode démonstration (5 migrations simulées, aucune boîte touchée) :
+
+```bash
+dotnet run --project src/MailMigrator.App -- --demo
+```
+
+### Tests
 
 ```bash
 dotnet test
 ```
 
-Les tests qui touchent de vrais serveurs sont désactivés par défaut (ils passent sans rien faire) :
+Les tests qui touchent de vrais serveurs sont inactifs par défaut (ils passent sans rien faire) :
 
 | Catégorie | Ce qui est testé | Lancement |
 |---|---|---|
-| `Integration` | Adaptateur MailKit et moteur complet contre un serveur IMAP réel (GreenMail) | `scripts\test-integration.ps1` (Java, sans Docker) ou `docker compose -f docker/docker-compose.yml up -d` puis `MAILMIGRATOR_GREENMAIL=127.0.0.1:3143 dotnet test --filter Category=Integration` |
-| `Live` | Détection, test de connexion et migration sur deux boîtes de test **jetables** | `scripts\test-live.ps1` (demande les identifiants, rien n'est enregistré) |
-| `Network` | Détection des serveurs sur de vrais domaines (Gmail, Orange…) | `MAILMIGRATOR_NETWORK_TESTS=1 dotnet test --filter Category=Network` |
+| `Integration` | Adaptateur MailKit, moteur complet, sauvegarde/restauration contre un vrai serveur IMAP (GreenMail) | `scripts\test-integration.ps1` (Java, sans Docker) ou `docker compose -f docker/docker-compose.yml up -d` puis `MAILMIGRATOR_GREENMAIL=127.0.0.1:3143 dotnet test --filter Category=Integration` |
+| `Live` | Détection, connexion et migration sur deux boîtes de test **jetables** | `scripts\test-live.ps1` |
+| `Network` | Détection sur de vrais domaines (Gmail, Orange, Free…) | `MAILMIGRATOR_NETWORK_TESTS=1 dotnet test --filter Category=Network` |
 
-`scripts\test-integration.ps1` nécessite Java (`winget install EclipseAdoptium.Temurin.21.JRE`) ;
-il télécharge GreenMail au premier lancement (somme SHA-1 vérifiée), le démarre, lance les tests puis l'arrête.
+Scripts utiles (identifiants demandés à l'exécution, jamais enregistrés) :
+- `scripts\seed-test-mailbox.ps1` — remplit une boîte jetable avec du courrier réaliste (dossiers, drapeaux, pièces jointes) ;
+- `scripts\compare-dates.ps1` — compare les dates (en-tête et réception IMAP) entre source et destination.
 
-## Mode démonstration
+### Créer l'installeur
 
-`dotnet run --project src/MailMigrator.App -- --demo` affiche 5 migrations simulées et un historique fictif, sans toucher à aucune boîte.
-Les données réelles (état des migrations, historique) sont dans `%LOCALAPPDATA%\LEWEBMAX\MailMigrator\migrations.db`.
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/build-installer.ps1
+```
 
-## Captures du design
+Le script lance les tests, publie l'application autonome (`publish\win-x64`), puis compile
+`installer\MailMigrator.iss`. Résultat : `installer\Output\LEWEBMAX-MailMigrator-Setup-<version>.exe`.
+La version se règle à un seul endroit : `Directory.Build.props`.
+
+### Captures du design
 
 ```bash
 dotnet run --project src/MailMigrator.App -- --screenshots docs/captures
@@ -51,21 +111,17 @@ Parcourt tous les écrans en thème clair puis sombre ; aperçu dans `docs/captu
 
 | Projet | Rôle |
 |---|---|
-| `src/MailMigrator.Core` | Logique pure, sans interface : détection des serveurs, test de connexion, moteur de migration, rapports. Réutilisable dans un service web. |
-| `src/MailMigrator.App` | Application WPF (WPF-UI, MVVM CommunityToolkit). |
-| `tests/MailMigrator.Tests` | Tests unitaires xUnit. |
+| `src/MailMigrator.Core` | Logique pure, sans interface : détection, connexion, moteur, sauvegardes locales, SQLite, rapports et exports. Réutilisable dans un service web. |
+| `src/MailMigrator.App` | Application WPF (.NET 8, WPF-UI, MVVM CommunityToolkit, Serilog). |
+| `tests/MailMigrator.Tests` | Tests xUnit : unitaires, intégration GreenMail, tests réseau et boîtes réelles optionnels. |
+| `installer/` | Script Inno Setup. |
+| `docker/` | Serveur IMAP de test (GreenMail) pour Docker. |
 
-La couleur d'accent LEWEBMAX se règle dans `src/MailMigrator.App/Themes/Accent.xaml`,
-le logo dans `src/MailMigrator.App/Assets/Logo.xaml`.
+Personnalisation de la charte : couleur d'accent dans `src/MailMigrator.App/Themes/Accent.xaml`,
+logo dans `src/MailMigrator.App/Assets/Logo.xaml`, icône générée par `scripts\make-icon.ps1`.
 
-## Avancement
+Données de l'application : `%LOCALAPPDATA%\LEWEBMAX\MailMigrator` (`migrations.db`, `logs\`).
 
-- [x] Étape 2 — tous les écrans, avec données fictives (5 migrations simulées)
-- [x] Étape 3a — détection des serveurs (autoconfig → ISPDB → autodiscover → MX + préfixes) et test de connexion avec erreurs en français
-- [x] Étape 3b — moteur de copie d'une tâche : reprise après arrêt, déduplication, reconnexion, pause, SQLite, mots de passe DPAPI
-- [x] Vitesse — copie par lots (un FETCH et un MULTIAPPEND pour 50 messages), téléchargement du lot suivant pendant l'envoi
-- [x] Sauvegarde sur ce PC — en option de la migration directe : boîte → PC (chiffré ou .eml), mise à jour, restauration PC → boîte
-- [x] Étape 3c — limites de débit : détection des refus « [LIMIT] / [UNAVAILABLE] / too many », attente de 30 s à 5 min, lots réduits et pause entre lots, puis réaccélération progressive
-- [x] Étape 3d — interface branchée sur le vrai moteur (aperçu réel des dossiers, file de 1 à 5 tâches, reprise au démarrage, réessayer les échecs), notifications Windows
-- [x] Étape 3e — rapport (en-tête « en cours » / terminé), vérification finale, exports HTML (design de l'app, impression, mobile) et CSV (Excel)
-- [ ] Étape 3f — installeur Inno Setup
+## Hors périmètre de la V1
+- Connexion OAuth2 Gmail / Microsoft 365 (l'interface `IAuthProvider` est prête) : utiliser un mot de passe d'application.
+- Contacts et calendriers (CardDAV / CalDAV), source POP3.
