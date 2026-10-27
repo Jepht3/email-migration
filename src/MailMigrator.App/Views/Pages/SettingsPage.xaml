@@ -1,0 +1,207 @@
+﻿<Page x:Class="MailMigrator.App.Views.Pages.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:c="clr-namespace:MailMigrator.App.Controls"
+      xmlns:vm="clr-namespace:MailMigrator.App.ViewModels"
+      Title="Paramètres">
+    <Page.Resources>
+        <!-- Carte de choix du thème -->
+        <Style x:Key="ThemeChoice" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Width="148" Padding="12" CornerRadius="10" BorderThickness="2"
+                                BorderBrush="{DynamicResource Brush.CardBorder}" Background="{DynamicResource Brush.SurfaceSubtle}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.AccentSoft}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="{StaticResource Space.PagePadding}" MaxWidth="960" HorizontalAlignment="Left">
+            <TextBlock Style="{StaticResource Text.PageTitle}" Text="Paramètres" />
+            <TextBlock Margin="0,4,0,24" Style="{StaticResource Text.BodySecondary}" Text="Apparence, comportement des migrations et sécurité." />
+
+            <!-- Apparence -->
+            <TextBlock Margin="0,0,0,8" Style="{StaticResource Text.SectionTitle}" Text="Apparence" />
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.BodyStrong}" Text="Thème" />
+                    <TextBlock Margin="0,2,0,12" Style="{StaticResource Text.Caption}" Text="« Système » suit automatiquement le mode clair ou sombre de Windows." />
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Style="{StaticResource ThemeChoice}" GroupName="Theme" AutomationProperties.Name="Thème du système"
+                                     IsChecked="{Binding ThemeChoice, Converter={StaticResource EqualsTo}, ConverterParameter=System}">
+                            <StackPanel>
+                                <Grid Height="64">
+                                    <Border CornerRadius="6" Background="{StaticResource Brush.Preview.Light}" />
+                                    <Border Margin="50,0,0,0" CornerRadius="0,6,6,0" Background="{StaticResource Brush.Preview.Dark}" />
+                                    <ui:SymbolIcon Symbol="Desktop24" FontSize="24" Foreground="{StaticResource Brush.Preview.Icon}" />
+                                </Grid>
+                                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}" Text="Système" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource ThemeChoice}" GroupName="Theme" AutomationProperties.Name="Thème clair"
+                                     IsChecked="{Binding ThemeChoice, Converter={StaticResource EqualsTo}, ConverterParameter=Light}">
+                            <StackPanel>
+                                <Border Height="64" CornerRadius="6" Background="{StaticResource Brush.Preview.Light}">
+                                    <ui:SymbolIcon Symbol="WeatherSunny24" FontSize="24" Foreground="{StaticResource Brush.Preview.Sun}" />
+                                </Border>
+                                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}" Text="Clair" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource ThemeChoice}" GroupName="Theme" AutomationProperties.Name="Thème sombre"
+                                     IsChecked="{Binding ThemeChoice, Converter={StaticResource EqualsTo}, ConverterParameter=Dark}">
+                            <StackPanel>
+                                <Border Height="64" CornerRadius="6" Background="{StaticResource Brush.Preview.Dark}">
+                                    <ui:SymbolIcon Symbol="WeatherMoon24" FontSize="24" Foreground="{StaticResource Brush.Preview.Moon}" />
+                                </Border>
+                                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}" Text="Sombre" />
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+
+                    <Border Margin="0,20" Style="{StaticResource Divider}" />
+
+                    <TextBlock Style="{StaticResource Text.BodyStrong}" Text="Couleur d'accent" />
+                    <TextBlock Margin="0,2,0,12" Style="{StaticResource Text.Caption}" Text="Utilisée pour les boutons principaux, la navigation et les indicateurs." />
+                    <ItemsControl ItemsSource="{Binding Accents}" Focusable="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:AccentOption}">
+                                <Button Margin="0,0,12,0" Cursor="Hand" ToolTip="{Binding Name}" AutomationProperties.Name="{Binding Name}"
+                                        Command="{Binding DataContext.SelectAccentCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Grid Width="40" Height="40">
+                                                <Ellipse x:Name="Ring" StrokeThickness="2" Stroke="Transparent" />
+                                                <Ellipse Margin="5" Fill="{Binding Brush}" />
+                                                <ui:SymbolIcon x:Name="Tick" Symbol="Checkmark16" FontSize="16" Foreground="{DynamicResource Brush.OnAccent}" Visibility="Collapsed" />
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter TargetName="Ring" Property="Stroke" Value="{Binding Brush}" />
+                                                    <Setter TargetName="Tick" Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                                    <Setter TargetName="Ring" Property="Stroke" Value="{DynamicResource Brush.Text.Primary}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Caption}" TextWrapping="Wrap"
+                               Text="La couleur de la charte LEWEBMAX se règle dans un seul fichier : Themes/Accent.xaml." />
+                </StackPanel>
+            </Border>
+
+            <!-- Migrations -->
+            <TextBlock Margin="0,28,0,8" Style="{StaticResource Text.SectionTitle}" Text="Migrations" />
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="260" />
+                            <ColumnDefinition Width="40" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.BodyStrong}" Text="Tâches simultanées" />
+                            <TextBlock Margin="0,2,0,0" Style="{StaticResource Text.Caption}" Text="Au-delà, les migrations attendent leur tour dans la file." />
+                        </StackPanel>
+                        <Slider Grid.Column="1" VerticalAlignment="Center" Minimum="1" Maximum="5" TickFrequency="1" IsSnapToTickEnabled="True"
+                                TickPlacement="BottomRight" Value="{Binding MaxConcurrency}" AutomationProperties.Name="Nombre de tâches simultanées" />
+                        <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Text.Number}" FontSize="20"
+                                   Text="{Binding MaxConcurrency}" />
+                    </Grid>
+
+                    <Border Margin="0,16" Style="{StaticResource Divider}" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.BodyStrong}" Text="Dossier des rapports" />
+                            <TextBlock Margin="0,2,0,0" Style="{StaticResource Text.Caption}" Text="{Binding ReportsFolder}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ReportsFolder}" />
+                        </StackPanel>
+                        <ui:Button Grid.Column="1" Appearance="Secondary" Command="{Binding BrowseReportsCommand}" Icon="{ui:SymbolIcon FolderOpen24}" Content="Parcourir…" />
+                    </Grid>
+
+                    <Border Margin="0,16" Style="{StaticResource Divider}" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="200" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.BodyStrong}" Text="Langue" />
+                            <TextBlock Margin="0,2,0,0" Style="{StaticResource Text.Caption}" Text="D'autres langues pourront être ajoutées ultérieurement." />
+                        </StackPanel>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" AutomationProperties.Name="Langue" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Sécurité -->
+            <TextBlock Margin="0,28,0,8" Style="{StaticResource Text.SectionTitle}" Text="Sécurité" />
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <c:OptionToggle Margin="0,-10,0,0" Symbol="LockClosed24" Title="Effacer automatiquement les mots de passe"
+                                    Description="Supprime les mots de passe dès qu'une migration se termine. Recommandé : ils ne sont jamais conservés plus que nécessaire."
+                                    IsChecked="{Binding ErasePasswords, Mode=TwoWay}" />
+                    <Border Margin="0,8,0,0" Style="{StaticResource Inset}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="18" Foreground="{DynamicResource Brush.Status.Success}" />
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Caption}" TextWrapping="Wrap"
+                                       Text="Les mots de passe sont chiffrés avec DPAPI (liés à votre session Windows) et n'apparaissent jamais dans les journaux." />
+                        </StackPanel>
+                    </Border>
+                    <Border Margin="0,8,0,0" Style="{StaticResource Inset}" Visibility="{Binding AnimationsDisabledBySystem, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Info24" FontSize="18" Foreground="{DynamicResource Brush.Status.Info}" />
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Caption}"
+                                       Text="Les effets d'animation sont désactivés dans Windows : l'application les respecte." />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- À propos -->
+            <Border Margin="0,28,0,0" Style="{StaticResource Card}">
+                <StackPanel Orientation="Horizontal">
+                    <Image Width="40" Height="40" Source="{StaticResource Logo.Mark}" />
+                    <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource Text.CardTitle}" Text="LEWEBMAX Mail Migrator" />
+                        <TextBlock Style="{StaticResource Text.Caption}">
+                            <Run Text="{Binding Version, Mode=OneWay}" /><Run Text=" · .NET 8 · WPF-UI · MailKit" />
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

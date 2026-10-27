@@ -1,0 +1,292 @@
+﻿<Page x:Class="MailMigrator.App.Views.Pages.ReportPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:c="clr-namespace:MailMigrator.App.Controls"
+      xmlns:r="clr-namespace:MailMigrator.Core.Reporting;assembly=MailMigrator.Core"
+      Title="Rapport">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="{StaticResource Space.PagePadding}" MaxWidth="1500">
+
+            <ui:Button Margin="-8,0,0,8" Appearance="Transparent" Padding="8,4" Command="{Binding BackCommand}"
+                       Icon="{ui:SymbolIcon ArrowLeft24}" Content="Historique" />
+
+            <!-- En-tête de réussite -->
+            <Border Style="{StaticResource Card}" Padding="28,24">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid Width="72" Height="72" VerticalAlignment="Center">
+                        <c:AnimatedCheck x:Name="Check" Visibility="{Binding IsSuccess, Converter={StaticResource BoolToVisibility}}" />
+                        <Border CornerRadius="36" Background="{DynamicResource Brush.Status.WarningSoft}" Visibility="{Binding HasErrors, Converter={StaticResource BoolToVisibility}}">
+                            <ui:SymbolIcon Symbol="Warning24" Filled="True" FontSize="36" Foreground="{DynamicResource Brush.Status.Warning}" />
+                        </Border>
+                    </Grid>
+                    <StackPanel Grid.Column="1" Margin="20,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Text.PageTitle}" Text="{Binding Title}" />
+                            <Border Margin="12,4,0,0" Width="10" Height="10" CornerRadius="5" VerticalAlignment="Center"
+                                    Background="{Binding Entry.ColorIndex, Converter={StaticResource JobColor}}" ToolTip="Couleur de la tâche" />
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Paragraph}" FontSize="14" Text="{Binding Summary}" />
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Caption}" Text="{Binding Entry.StartedAt, Converter={StaticResource Date}, ConverterParameter=long, StringFormat='Démarrée le {0}'}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                        <ui:Button HorizontalAlignment="Stretch" Appearance="Primary" Command="{Binding ExportHtmlCommand}" Icon="{ui:SymbolIcon DocumentArrowDown20}" Content="Exporter en HTML" />
+                        <ui:Button HorizontalAlignment="Stretch" Margin="0,8,0,0" Appearance="Secondary" Command="{Binding ExportCsvCommand}" Icon="{ui:SymbolIcon DocumentTable24}" Content="Exporter en CSV" />
+                        <ui:Button HorizontalAlignment="Stretch" Margin="0,8,0,0" Appearance="Secondary" Command="{Binding RetryFailedCommand}" Icon="{ui:SymbolIcon ArrowClockwise24}" Content="Réessayer les échecs"
+                                   Visibility="{Binding Entry.Failed, Converter={StaticResource HasValueToVisibility}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Chiffres clés -->
+            <UniformGrid Margin="-8,16,-8,0" Columns="6">
+                <Border Style="{StaticResource Tile}" Margin="8,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="16" Foreground="{DynamicResource Brush.Status.Success}" />
+                            <TextBlock Margin="6,0,0,0" Style="{StaticResource Text.Caption}" Text="Copiés" />
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Number}" Text="{Binding Entry.Copied, Converter={StaticResource Number}}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" Margin="8,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ArrowForward24" FontSize="16" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                            <TextBlock Margin="6,0,0,0" Style="{StaticResource Text.Caption}" Text="Déjà présents" />
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Number}" Text="{Binding Entry.Skipped, Converter={StaticResource Number}}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" Margin="8,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="16" Foreground="{DynamicResource Brush.Status.Error}" />
+                            <TextBlock Margin="6,0,0,0" Style="{StaticResource Text.Caption}" Text="Échecs" />
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Number}" Text="{Binding Entry.Failed, Converter={StaticResource Number}}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" Margin="8,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="DataUsage24" FontSize="16" Foreground="{DynamicResource Brush.Status.Info}" />
+                            <TextBlock Margin="6,0,0,0" Style="{StaticResource Text.Caption}" Text="Volume" />
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Number}" Text="{Binding Entry.Bytes, Converter={StaticResource Bytes}}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" Margin="8,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Timer24" FontSize="16" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                            <TextBlock Margin="6,0,0,0" Style="{StaticResource Text.Caption}" Text="Durée totale" />
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Number}" Text="{Binding Entry.Duration, Converter={StaticResource Duration}}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" Margin="8,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="TopSpeed24" FontSize="16" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                            <TextBlock Margin="6,0,0,0" Style="{StaticResource Text.Caption}" Text="Messages / min" />
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Number}" Text="{Binding AverageSpeed}" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Par dossier + vérification -->
+            <Grid Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="2*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,12" Style="{StaticResource Text.CardTitle}" Text="Bilan par dossier" />
+                        <Grid Margin="8,0,8,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="60" />
+                                <ColumnDefinition Width="80" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Text.ColumnHeader}" Text="Dossier" />
+                            <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource Text.ColumnHeader}" Text="Source" />
+                            <TextBlock Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource Text.ColumnHeader}" Text="Copiés" />
+                            <TextBlock Grid.Column="3" HorizontalAlignment="Right" Style="{StaticResource Text.ColumnHeader}" Text="Ignorés" />
+                            <TextBlock Grid.Column="4" HorizontalAlignment="Right" Style="{StaticResource Text.ColumnHeader}" Text="Échecs" />
+                            <TextBlock Grid.Column="5" HorizontalAlignment="Right" Style="{StaticResource Text.ColumnHeader}" Text="Volume" />
+                        </Grid>
+                        <Border Style="{StaticResource Divider}" />
+                        <ItemsControl ItemsSource="{Binding Folders}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type r:FolderReport}">
+                                    <Grid Margin="8,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition Width="80" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:SymbolIcon Symbol="{Binding Role, Converter={StaticResource FolderSymbol}}" FontSize="16" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                                            <TextBlock Margin="8,0,0,0" Style="{StaticResource Text.Body}" Text="{Binding DestinationPath}" />
+                                            <TextBlock Margin="6,0,0,0" Style="{StaticResource Text.Caption}" VerticalAlignment="Center" Text="{Binding SourcePath, StringFormat='← {0}'}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource Text.CaptionNumber}" FontSize="14" Text="{Binding SourceCount, Converter={StaticResource Number}}" />
+                                        <TextBlock Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource Text.NumberSmall}" Text="{Binding Copied, Converter={StaticResource Number}}" />
+                                        <TextBlock Grid.Column="3" HorizontalAlignment="Right" Style="{StaticResource Text.CaptionNumber}" FontSize="14" Text="{Binding Skipped, Converter={StaticResource Number}}" />
+                                        <TextBlock x:Name="Failed" Grid.Column="4" HorizontalAlignment="Right" Style="{StaticResource Text.NumberSmall}" Foreground="{DynamicResource Brush.Status.Error}" Text="{Binding Failed, Converter={StaticResource Number}}" />
+                                        <TextBlock Grid.Column="5" HorizontalAlignment="Right" Style="{StaticResource Text.CaptionNumber}" FontSize="14" Text="{Binding Bytes, Converter={StaticResource Bytes}}" />
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Failed}" Value="0">
+                                            <Setter TargetName="Failed" Property="Foreground" Value="{DynamicResource Brush.Text.Disabled}" />
+                                            <Setter TargetName="Failed" Property="FontWeight" Value="Normal" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Text.CardTitle}" Text="Vérification source / destination" />
+                        <TextBlock Margin="0,2,0,12" Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Text="Recomptage final des messages dans chaque dossier, des deux côtés." />
+                        <Grid Margin="8,0,8,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="64" />
+                                <ColumnDefinition Width="80" />
+                                <ColumnDefinition Width="80" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Text.ColumnHeader}" Text="Dossier" />
+                            <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource Text.ColumnHeader}" Text="Source" />
+                            <TextBlock Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource Text.ColumnHeader}" Text="Destination" />
+                            <TextBlock Grid.Column="3" HorizontalAlignment="Right" Style="{StaticResource Text.ColumnHeader}" Text="Écart" />
+                        </Grid>
+                        <Border Style="{StaticResource Divider}" />
+                        <ItemsControl ItemsSource="{Binding Folders}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type r:FolderReport}">
+                                    <Border x:Name="Row" Margin="0,2" Padding="8,6" CornerRadius="6" Background="{DynamicResource Brush.Status.WarningSoft}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="64" />
+                                                <ColumnDefinition Width="80" />
+                                                <ColumnDefinition Width="80" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Style="{StaticResource Text.Body}" Text="{Binding DestinationPath}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource Text.CaptionNumber}" FontSize="14" Text="{Binding SourceCount, Converter={StaticResource Number}}" />
+                                            <TextBlock Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource Text.CaptionNumber}" FontSize="14" Text="{Binding DestinationCountAfter, Converter={StaticResource Number}}" />
+                                            <StackPanel Grid.Column="3" HorizontalAlignment="Right" Orientation="Horizontal">
+                                                <ui:SymbolIcon x:Name="Icon" Symbol="Warning24" FontSize="14" Foreground="{DynamicResource Brush.Status.Warning}" />
+                                                <TextBlock x:Name="Gap" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Status.Warning}"
+                                                           Text="{Binding Gap, StringFormat='−{0}'}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Gap}" Value="0">
+                                            <Setter TargetName="Icon" Property="Symbol" Value="CheckmarkCircle24" />
+                                            <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource Brush.Status.Success}" />
+                                            <Setter TargetName="Gap" Property="Text" Value="OK" />
+                                            <Setter TargetName="Gap" Property="Foreground" Value="{DynamicResource Brush.Status.Success}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Gap}" Value="0">
+                                            <Setter TargetName="Row" Property="Background" Value="Transparent" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Liste des messages -->
+            <Border Margin="0,16,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="320" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="200" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource Text.CardTitle}" Text="Messages traités" />
+                            <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding VisibleCount, Converter={StaticResource Number}, StringFormat='{}{0} message(s) affiché(s)'}" />
+                        </StackPanel>
+                        <ui:TextBox Grid.Column="1" PlaceholderText="Rechercher un sujet, un expéditeur, un dossier…" Icon="{ui:SymbolIcon Search24}"
+                                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}" AutomationProperties.Name="Rechercher dans les messages" />
+                        <ComboBox Grid.Column="3" ItemsSource="{Binding StatusFilters}" DisplayMemberPath="Label" SelectedItem="{Binding StatusFilter}"
+                                  AutomationProperties.Name="Filtrer par statut" />
+                    </Grid>
+                    <Grid Margin="10,0,24,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="96" />
+                            <ColumnDefinition Width="180" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="140" />
+                            <ColumnDefinition Width="80" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource Text.ColumnHeader}" Text="Statut" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource Text.ColumnHeader}" Text="Date" />
+                        <TextBlock Grid.Column="2" Style="{StaticResource Text.ColumnHeader}" Text="Expéditeur" />
+                        <TextBlock Grid.Column="3" Style="{StaticResource Text.ColumnHeader}" Text="Sujet" />
+                        <TextBlock Grid.Column="4" Style="{StaticResource Text.ColumnHeader}" Text="Dossier" />
+                        <TextBlock Grid.Column="5" HorizontalAlignment="Right" Style="{StaticResource Text.ColumnHeader}" Text="Taille" />
+                    </Grid>
+                    <Border Style="{StaticResource Divider}" />
+                    <ListBox Height="440" Style="{StaticResource List.Plain}" ItemsSource="{Binding MessagesView}" AutomationProperties.Name="Liste des messages">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type r:MessageReportLine}">
+                                <Grid Margin="10,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140" />
+                                        <ColumnDefinition Width="96" />
+                                        <ColumnDefinition Width="180" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="140" />
+                                        <ColumnDefinition Width="80" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <c:StatusBadge Status="{Binding Status}" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource Text.CaptionNumber}" FontSize="13" Text="{Binding Date, Converter={StaticResource Date}}" />
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Text.Body}" Text="{Binding Sender}" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Style="{StaticResource Text.Body}" Text="{Binding Subject}" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                                    <TextBlock Grid.Column="4" VerticalAlignment="Center" Style="{StaticResource Text.Caption}" FontSize="13" Text="{Binding Folder}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Right" Style="{StaticResource Text.CaptionNumber}" FontSize="13" Text="{Binding Size, Converter={StaticResource Bytes}}" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5" Margin="0,4,0,0" FontSize="12" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource Brush.Status.Error}" Text="{Binding Error}"
+                                               Visibility="{Binding Error, Converter={StaticResource HasValueToVisibility}}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

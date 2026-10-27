@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Surfaces : #1E1E24 posé sur le Mica -->
+    <SolidColorBrush x:Key="Brush.Surface" Color="#E61E1E24" />
+    <SolidColorBrush x:Key="Brush.SurfaceStrong" Color="#1E1E24" />
+    <SolidColorBrush x:Key="Brush.SurfaceSubtle" Color="#0DFFFFFF" />
+    <SolidColorBrush x:Key="Brush.SurfaceHover" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Brush.CardBorder" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Divider" Color="#12FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Track" Color="#2E2E38" />
+    <SolidColorBrush x:Key="Brush.Skeleton" Color="#2C2C35" />
+    <SolidColorBrush x:Key="Brush.Scrim" Color="#66000000" />
+    <Color x:Key="Color.Shadow">#000000</Color>
+    <LinearGradientBrush x:Key="Brush.Hero" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#E61E2540" />
+        <GradientStop Offset="1" Color="#E6292038" />
+    </LinearGradientBrush>
+
+    <!-- Texte : 3 niveaux de contraste (AA sur #1E1E24) -->
+    <SolidColorBrush x:Key="Brush.Text.Primary" Color="#F4F4F5" />
+    <SolidColorBrush x:Key="Brush.Text.Secondary" Color="#A9A9B4" />
+    <SolidColorBrush x:Key="Brush.Text.Disabled" Color="#6B6B76" />
+
+    <!-- États : teintes éclaircies pour garder le contraste AA sur fond sombre -->
+    <SolidColorBrush x:Key="Brush.Status.Success" Color="#4ADE80" />
+    <SolidColorBrush x:Key="Brush.Status.SuccessSoft" Color="#2616A34A" />
+    <SolidColorBrush x:Key="Brush.Status.Warning" Color="#FBBF24" />
+    <SolidColorBrush x:Key="Brush.Status.WarningSoft" Color="#26D97706" />
+    <SolidColorBrush x:Key="Brush.Status.Error" Color="#F87171" />
+    <SolidColorBrush x:Key="Brush.Status.ErrorSoft" Color="#26DC2626" />
+    <SolidColorBrush x:Key="Brush.Status.Info" Color="#38BDF8" />
+    <SolidColorBrush x:Key="Brush.Status.InfoSoft" Color="#260EA5E9" />
+    <SolidColorBrush x:Key="Brush.Status.Paused" Color="#94A3B8" />
+    <SolidColorBrush x:Key="Brush.Status.PausedSoft" Color="#2664748B" />
+</ResourceDictionary>

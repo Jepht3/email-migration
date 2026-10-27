@@ -1,0 +1,509 @@
+﻿<Page x:Class="MailMigrator.App.Views.Pages.NewMigrationPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:c="clr-namespace:MailMigrator.App.Controls"
+      xmlns:b="clr-namespace:MailMigrator.App.Behaviors"
+      xmlns:vm="clr-namespace:MailMigrator.App.ViewModels"
+      xmlns:m="clr-namespace:MailMigrator.Core.Models;assembly=MailMigrator.Core"
+      Title="Nouvelle migration">
+
+    <Page.Resources>
+        <!-- Un côté d'une paire (source ou destination) -->
+        <DataTemplate x:Key="AccountSide" DataType="{x:Type vm:AccountSideViewModel}">
+            <StackPanel>
+                <TextBlock Margin="0,0,0,8" Style="{StaticResource Text.Overline}" Text="{Binding Role}" />
+                <ui:TextBox PlaceholderText="adresse@domaine.fr" Icon="{ui:SymbolIcon Mail24}"
+                            Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"
+                            AutomationProperties.Name="{Binding Role, StringFormat='Adresse email {0}'}" />
+                <ui:PasswordBox Margin="0,8,0,0" PlaceholderText="Mot de passe ou mot de passe d'application" Icon="{ui:SymbolIcon Key24}"
+                                Password="{Binding Password, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                AutomationProperties.Name="{Binding Role, StringFormat='Mot de passe {0}'}" />
+
+                <!-- Serveur détecté / squelette pendant la détection -->
+                <Grid Margin="0,12,0,0" MinHeight="28">
+                    <StackPanel Visibility="{Binding IsDetecting, Converter={StaticResource BoolToVisibility}}" VerticalAlignment="Center">
+                        <c:Skeleton Width="200" />
+                        <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Caption}" Text="Détection du serveur IMAP…" />
+                    </StackPanel>
+                    <Grid Visibility="{Binding IsDetected, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="24" Height="24" CornerRadius="6" VerticalAlignment="Center"
+                                Background="{Binding Provider.BrandColor, Converter={StaticResource HexBrush}, FallbackValue={StaticResource Brush.Accent}}">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource Brush.OnAccent}"
+                                       Text="{Binding Provider.Monogram, FallbackValue=@}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource Text.CaptionStrong}" Text="{Binding Provider.Name, FallbackValue='Serveur détecté'}" />
+                            <TextBlock Style="{StaticResource Text.Caption}" TextTrimming="CharacterEllipsis">
+                                <Run Text="{Binding ServerLabel, Mode=OneWay}" /><Run Text=" · via " /><Run Text="{Binding SourceLabel, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <ui:Button Grid.Column="2" Appearance="Transparent" Padding="8,4" FontSize="12" Command="{Binding ToggleAdvancedCommand}"
+                                   Content="Modifier" Icon="{ui:SymbolIcon Edit16}" ToolTip="Modifier les paramètres du serveur" />
+                    </Grid>
+                    <Grid Visibility="{Binding IsDetectionFailed, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Symbol="Warning24" FontSize="18" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Status.Warning}" />
+                        <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource Text.CaptionStrong}" Text="Serveur non détecté automatiquement" />
+                            <TextBlock Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Text="Vérifiez les paramètres proposés ci-dessous (fournis par votre hébergeur)." />
+                        </StackPanel>
+                        <ui:Button Grid.Column="2" Appearance="Transparent" Padding="8,4" FontSize="12" Command="{Binding ShowDetailsCommand}"
+                                   Content="Détail" Icon="{ui:SymbolIcon Info16}" ToolTip="Voir les tentatives de détection" />
+                    </Grid>
+                </Grid>
+
+                <!-- Paramètres avancés -->
+                <Border Margin="0,8,0,0" Style="{StaticResource Inset}" Visibility="{Binding ShowAdvanced, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="84" />
+                            </Grid.ColumnDefinitions>
+                            <ui:TextBox PlaceholderText="Serveur IMAP" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Serveur IMAP" />
+                            <ui:TextBox Grid.Column="1" Margin="8,0,0,0" PlaceholderText="Port" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Port" />
+                        </Grid>
+                        <ui:TextBox Margin="0,8,0,0" PlaceholderText="Identifiant (souvent l'adresse email)" Icon="{ui:SymbolIcon Person24}"
+                                    Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Identifiant de connexion" />
+                        <ComboBox Margin="0,8,0,0" ItemsSource="{Binding SecurityOptions}" DisplayMemberPath="Label"
+                                  SelectedValuePath="Mode" SelectedValue="{Binding Security}" AutomationProperties.Name="Chiffrement" />
+                        <ui:InfoBar Margin="0,8,0,0" IsOpen="{Binding IsUnencrypted}" IsClosable="False" Severity="Warning" Title="Connexion non chiffrée"
+                                    Message="Le mot de passe et les emails circuleront en clair sur le réseau. À n'utiliser que sur un réseau de confiance." />
+                    </StackPanel>
+                </Border>
+
+                <!-- Test de connexion -->
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ui:Button Appearance="Secondary" Command="{Binding TestCommand}" Icon="{ui:SymbolIcon PlugConnected24}" Content="Tester la connexion" />
+                    <ui:ProgressRing Grid.Column="1" Margin="12,0,0,0" Width="18" Height="18" IsIndeterminate="True" HorizontalAlignment="Left"
+                                     Visibility="{Binding IsTesting, Converter={StaticResource BoolToVisibility}}" />
+                    <Border Grid.Column="1" Margin="12,0,0,0" HorizontalAlignment="Left" Visibility="{Binding IsTestOk, Converter={StaticResource BoolToVisibility}}"
+                            CornerRadius="999" Padding="8,4,10,4" Background="{DynamicResource Brush.Status.SuccessSoft}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="CheckmarkCircle24" Filled="True" FontSize="16" Foreground="{DynamicResource Brush.Status.Success}" />
+                            <TextBlock Margin="6,0,0,0" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Status.Success}" Text="Connexion OK" />
+                            <TextBlock Margin="6,0,0,0" FontSize="12" Foreground="{DynamicResource Brush.Status.Success}" Text="{Binding TestSummary, StringFormat='· {0}'}"
+                                       Visibility="{Binding TestSummary, Converter={StaticResource HasValueToVisibility}}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Margin="12,0,0,0" HorizontalAlignment="Left" Visibility="{Binding IsTestFailed, Converter={StaticResource BoolToVisibility}}"
+                            CornerRadius="999" Padding="8,4,10,4" Background="{DynamicResource Brush.Status.ErrorSoft}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ErrorCircle24" Filled="True" FontSize="16" Foreground="{DynamicResource Brush.Status.Error}" />
+                            <TextBlock Margin="6,0,0,0" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Status.Error}" Text="{Binding Error.Title}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+                <Border Margin="0,8,0,0" Padding="12,10" CornerRadius="8" Background="{DynamicResource Brush.Status.ErrorSoft}"
+                        Visibility="{Binding IsTestFailed, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Text.Paragraph}" FontSize="12" LineHeight="17" Foreground="{DynamicResource Brush.Text.Primary}" Text="{Binding Error.Explanation}" />
+                        <StackPanel Margin="-8,4,0,-4" Orientation="Horizontal">
+                            <ui:Button Padding="8,2" Appearance="Transparent" FontSize="12" Foreground="{DynamicResource Brush.Accent}"
+                                       Command="{Binding ErrorActionCommand}" Content="{Binding Error.ActionLabel}" Icon="{ui:SymbolIcon ArrowRight16}" />
+                            <ui:Button Padding="8,2" Appearance="Transparent" FontSize="12" Foreground="{DynamicResource Brush.Text.Secondary}"
+                                       Command="{Binding ShowDetailsCommand}" Content="Voir le détail technique"
+                                       Visibility="{Binding TechnicalDetail, Converter={StaticResource HasValueToVisibility}}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid Margin="{StaticResource Space.PagePadding}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Style="{StaticResource Text.PageTitle}" Text="Nouvelle migration" />
+            <TextBlock Margin="0,4,0,20" Style="{StaticResource Text.BodySecondary}"
+                       Text="Ajoutez jusqu'à 5 boîtes : elles seront migrées en parallèle, les suivantes attendront leur tour." />
+        </StackPanel>
+
+        <!-- Indicateur d'étapes -->
+        <ItemsControl Grid.Row="1" Margin="0,0,0,20" ItemsSource="{Binding Steps}" Focusable="False">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:StepViewModel}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="Circle" Width="32" Height="32" CornerRadius="16" BorderThickness="2"
+                                BorderBrush="{DynamicResource Brush.CardBorder}" Background="{DynamicResource Brush.Surface}" Cursor="Hand"
+                                ToolTip="{Binding Title}">
+                            <Border.InputBindings>
+                                <MouseBinding Gesture="LeftClick" Command="{Binding DataContext.GoToStepCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" />
+                            </Border.InputBindings>
+                            <Grid>
+                                <TextBlock x:Name="Number" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Brush.Text.Secondary}" Text="{Binding Number}" />
+                                <ui:SymbolIcon x:Name="Check" Symbol="Checkmark16" FontSize="16" Visibility="Collapsed" Foreground="{DynamicResource Brush.OnAccent}" />
+                            </Grid>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="12,0,16,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="Title" Style="{StaticResource Text.BodyStrong}" Foreground="{DynamicResource Brush.Text.Secondary}" Text="{Binding Title}" />
+                            <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding Subtitle}" />
+                        </StackPanel>
+                        <Border x:Name="Line" Grid.Column="2" Height="2" Margin="0,0,16,0" CornerRadius="1" Background="{DynamicResource Brush.Track}" />
+                    </Grid>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                            <Setter TargetName="Circle" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                            <Setter TargetName="Circle" Property="Background" Value="{DynamicResource Brush.AccentSoft}" />
+                            <Setter TargetName="Number" Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+                            <Setter TargetName="Title" Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsDone}" Value="True">
+                            <Setter TargetName="Circle" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                            <Setter TargetName="Circle" Property="Background" Value="{DynamicResource Brush.Accent}" />
+                            <Setter TargetName="Number" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="Title" Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                            <Setter TargetName="Line" Property="Background" Value="{DynamicResource Brush.Accent}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsLast}" Value="True">
+                            <Setter TargetName="Line" Property="Visibility" Value="Hidden" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- ============ Étape 1 : Comptes ============ -->
+        <Grid Grid.Row="2" b:Reveal.OnShow="True" Visibility="{Binding Step, Converter={StaticResource EqualsToVisibility}, ConverterParameter=0}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid Margin="0,0,0,12">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource Text.SectionTitle}" Text="Boîtes à migrer" />
+                    <Border Margin="12,0,0,0" Style="{StaticResource Chip}">
+                        <TextBlock Style="{StaticResource Text.CaptionStrong}" Text="{Binding PairCountLabel}" />
+                    </Border>
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <ui:Button Appearance="Secondary" Command="{Binding ImportCsvCommand}" Icon="{ui:SymbolIcon DocumentTable24}" Content="Importer un CSV"
+                               ToolTip="Colonnes : source ; mot de passe source ; destination ; mot de passe destination" />
+                    <ui:Button Margin="8,0,0,0" Appearance="Secondary" Command="{Binding AddPairCommand}" Icon="{ui:SymbolIcon Add24}" Content="Ajouter une boîte" />
+                </StackPanel>
+            </Grid>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,-12,0" Padding="0,0,12,0">
+                <StackPanel>
+                    <ItemsControl ItemsSource="{Binding Pairs}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:AccountPairViewModel}">
+                                <Border Style="{StaticResource Card}" Margin="0,0,0,16" Padding="0">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <!-- Bandeau d'identité de la tâche -->
+                                        <Border Height="4" VerticalAlignment="Top" CornerRadius="12,12,0,0" Background="{Binding ColorIndex, Converter={StaticResource JobColor}, ConverterParameter=Gradient}" />
+                                        <Grid Margin="20,16,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="24" Height="24" CornerRadius="12" Background="{Binding ColorIndex, Converter={StaticResource JobColor}}">
+                                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Brush.OnAccent}" Text="{Binding Number}" />
+                                                </Border>
+                                                <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.CardTitle}">
+                                                    <Run Text="Migration" /> <Run Text="{Binding Number, Mode=OneWay}" />
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <ui:Button HorizontalAlignment="Right" Appearance="Transparent" Padding="6" Command="{Binding RemoveCommand}"
+                                                       Icon="{ui:SymbolIcon Delete24}" ToolTip="Retirer cette boîte" AutomationProperties.Name="Retirer cette boîte" />
+                                        </Grid>
+                                        <Grid Grid.Row="1" Margin="20,8,20,20">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="88" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <ContentControl Focusable="False" Content="{Binding Source}" ContentTemplate="{StaticResource AccountSide}" />
+                                            <c:FlowArrow Grid.Column="1" Margin="0,56,0,0" VerticalAlignment="Top" />
+                                            <ContentControl Grid.Column="2" Focusable="False" Content="{Binding Destination}" ContentTemplate="{StaticResource AccountSide}" />
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Ajouter une boîte -->
+                    <Border Padding="20" CornerRadius="12" BorderThickness="1.5" Cursor="Hand"
+                            BorderBrush="{DynamicResource Brush.CardBorder}" Background="Transparent"
+                            Visibility="{Binding CanAddPair, Converter={StaticResource BoolToVisibility}}">
+                        <Border.InputBindings>
+                            <MouseBinding Gesture="LeftClick" Command="{Binding AddPairCommand}" />
+                        </Border.InputBindings>
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="AddCircle24" FontSize="20" Foreground="{DynamicResource Brush.Accent}" />
+                            <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.BodyStrong}" Foreground="{DynamicResource Brush.Accent}" Text="Ajouter une boîte (jusqu'à 5)" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- ============ Étape 2 : Options ============ -->
+        <ScrollViewer Grid.Row="2" b:Reveal.OnShow="True" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding Step, Converter={StaticResource EqualsToVisibility}, ConverterParameter=1}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="5*" />
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="6*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.CardTitle}" Text="Contenu à migrer" />
+                            <TextBlock Margin="0,2,0,8" Style="{StaticResource Text.Caption}" Text="Ces réglages s'appliquent à toutes les boîtes de ce lot." />
+
+                            <c:OptionToggle Symbol="Delete24" Title="Migrer la corbeille"
+                                            Description="Copie aussi les messages supprimés. Désactivé, la corbeille de la destination reste vide."
+                                            IsChecked="{Binding IncludeTrash, Mode=TwoWay}" />
+                            <c:OptionToggle Symbol="ShieldError24" Title="Migrer les spams"
+                                            Description="Les courriers indésirables sont rarement utiles ; ils sont ignorés par défaut."
+                                            IsChecked="{Binding IncludeJunk, Mode=TwoWay}" />
+                            <c:OptionToggle Symbol="FolderArrowRight24" Title="Correspondance automatique des dossiers"
+                                            Description="Associe Sent / Envoyés / Sent Items, Trash / Corbeille… grâce aux attributs SPECIAL-USE des serveurs."
+                                            IsChecked="{Binding AutoMapFolders, Mode=TwoWay}" />
+                            <c:OptionToggle Symbol="CalendarLtr24" Title="Limiter à une plage de dates"
+                                            Description="Seuls les messages reçus dans cette période seront copiés."
+                                            IsChecked="{Binding UseDateRange, Mode=TwoWay}" />
+                            <Grid Margin="44,0,0,12" Visibility="{Binding UseDateRange, Converter={StaticResource BoolToVisibility}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <DatePicker SelectedDate="{Binding DateFrom}" AutomationProperties.Name="Date de début" />
+                                <DatePicker Grid.Column="2" SelectedDate="{Binding DateTo}" AutomationProperties.Name="Date de fin" />
+                            </Grid>
+                            <c:OptionToggle Symbol="ShieldCheckmark24" Title="Vérification finale"
+                                            Description="Recompte les messages de chaque dossier des deux côtés et signale les écarts."
+                                            IsChecked="{Binding VerifyAfterCopy, Mode=TwoWay}" />
+
+                            <TextBlock Margin="0,12,0,6" Style="{StaticResource Text.BodyStrong}" Text="Dossiers à exclure" />
+                            <ui:TextBox PlaceholderText="ex. Archives/Ancien, Newsletters" Icon="{ui:SymbolIcon FolderProhibited24}"
+                                        Text="{Binding ExcludedFolders, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Dossiers à exclure" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Caption}" Text="Séparez les dossiers par des virgules. Les sous-dossiers sont exclus aussi." />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Margin="0,16,0,0" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.CardTitle}" Text="Sécurité" />
+                            <c:OptionToggle Margin="0,8,0,0" Symbol="LockClosed24" Title="Effacer les mots de passe à la fin"
+                                            Description="Les mots de passe, chiffrés avec votre session Windows (DPAPI), sont supprimés dès la fin de la migration."
+                                            IsChecked="{Binding ErasePasswords, Mode=TwoWay}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Aperçu de la correspondance des dossiers -->
+                <Border Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Text.CardTitle}" Text="Correspondance des dossiers" />
+                        <TextBlock Margin="0,2,0,16" Style="{StaticResource Text.Caption}" TextWrapping="Wrap"
+                                   Text="Aperçu pour la première boîte. Modifiez une destination si besoin ; les dossiers absents seront créés." />
+                        <Grid Margin="8,0,8,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="32" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="110" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.ColumnHeader}" Text="Source" />
+                            <TextBlock Grid.Column="3" Style="{StaticResource Text.ColumnHeader}" Text="Destination" />
+                            <TextBlock Grid.Column="4" Style="{StaticResource Text.ColumnHeader}" Text="Origine" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding FolderMappings}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:FolderMappingViewModel}">
+                                    <Border x:Name="Row" Padding="8,6" CornerRadius="8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="32" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="32" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="110" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding Included}" MinWidth="0" ToolTip="Inclure ce dossier"
+                                                      AutomationProperties.Name="{Binding Source, StringFormat='Inclure {0}'}" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="{Binding Role, Converter={StaticResource FolderSymbol}}" FontSize="16" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                                                <StackPanel Margin="8,0,0,0">
+                                                    <TextBlock Style="{StaticResource Text.Body}" Text="{Binding Source}" />
+                                                    <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding MessageCount, Converter={StaticResource Number}, StringFormat='{}{0} messages'}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <ui:SymbolIcon Grid.Column="2" Symbol="ArrowRight16" FontSize="14" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                                            <ComboBox Grid.Column="3" IsEditable="True" Text="{Binding Destination}"
+                                                      ItemsSource="{Binding DataContext.DestinationFolders, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                      AutomationProperties.Name="{Binding Source, StringFormat='Destination de {0}'}" />
+                                            <Border x:Name="Origin" Grid.Column="4" Margin="8,0,0,0" Style="{StaticResource Chip}">
+                                                <TextBlock x:Name="OriginText" Style="{StaticResource Text.Caption}" FontSize="11" Text="{Binding OriginLabel}" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Included}" Value="False">
+                                            <Setter TargetName="Row" Property="Opacity" Value="0.5" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding OriginLabel}" Value="SPECIAL-USE">
+                                            <Setter TargetName="Origin" Property="Background" Value="{DynamicResource Brush.AccentSoft}" />
+                                            <Setter TargetName="OriginText" Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding OriginLabel}" Value="Sera créé">
+                                            <Setter TargetName="Origin" Property="Background" Value="{DynamicResource Brush.Status.InfoSoft}" />
+                                            <Setter TargetName="OriginText" Property="Foreground" Value="{DynamicResource Brush.Status.Info}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- ============ Étape 3 : Lancement ============ -->
+        <ScrollViewer Grid.Row="2" b:Reveal.OnShow="True" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding Step, Converter={StaticResource EqualsToVisibility}, ConverterParameter=2}">
+            <Border Style="{StaticResource Card}" Padding="28" MaxWidth="960" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource IconBubble}" Width="48" Height="48" CornerRadius="24">
+                            <ui:SymbolIcon Symbol="Rocket24" FontSize="24" Foreground="{DynamicResource Brush.Accent}" />
+                        </Border>
+                        <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource Text.SectionTitle}" Text="Tout est prêt" />
+                            <TextBlock Style="{StaticResource Text.BodySecondary}">
+                                <Run Text="{Binding PairCount, Mode=OneWay}" /><Run Text=" boîte(s) à migrer · " /><Run Text="{Binding TestedOkCount, Mode=OneWay}" /><Run Text=" connexion(s) vérifiée(s) des deux côtés" />
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Border Margin="0,20,0,0" Style="{StaticResource Divider}" />
+
+                    <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Pairs}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:AccountPairViewModel}">
+                                <Grid Margin="0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="32" Height="32" CornerRadius="16" Background="{Binding ColorIndex, Converter={StaticResource JobColor}}">
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.OnAccent}"
+                                                   Text="{Binding Source.Email, Converter={StaticResource Initials}}" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource Text.BodyStrong}" Text="{Binding Source.Email}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding Source.ServerLabel}" />
+                                    </StackPanel>
+                                    <ui:SymbolIcon Grid.Column="2" Symbol="ArrowRight24" FontSize="18" Foreground="{DynamicResource Brush.Accent}" />
+                                    <StackPanel Grid.Column="3" Margin="12,0" VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource Text.BodyStrong}" Text="{Binding Destination.Email}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding Destination.ServerLabel}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:SymbolIcon x:Name="Icon" Symbol="Warning24" FontSize="16" Foreground="{DynamicResource Brush.Status.Warning}" />
+                                        <TextBlock x:Name="Label" Margin="6,0,0,0" Style="{StaticResource Text.Caption}" Text="Connexion non testée" />
+                                    </StackPanel>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Source.IsTestOk}" Value="True" />
+                                            <Condition Binding="{Binding Destination.IsTestOk}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter TargetName="Icon" Property="Symbol" Value="CheckmarkCircle24" />
+                                        <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource Brush.Status.Success}" />
+                                        <Setter TargetName="Label" Property="Text" Value="Connexions OK" />
+                                    </MultiDataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border Margin="0,8,0,20" Style="{StaticResource Divider}" />
+
+                    <TextBlock Margin="0,0,0,10" Style="{StaticResource Text.BodyStrong}" Text="Options" />
+                    <WrapPanel>
+                        <Border Margin="0,0,8,8" Style="{StaticResource Chip}" Padding="10,4">
+                            <TextBlock Style="{StaticResource Text.Caption}"><Run Text="Période : " /><Run Text="{Binding DateSummary, Mode=OneWay}" FontWeight="SemiBold" /></TextBlock>
+                        </Border>
+                        <Border Margin="0,0,8,8" Style="{StaticResource Chip}" Padding="10,4">
+                            <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding IncludeTrash, Converter={StaticResource YesNo}, ConverterParameter='Corbeille incluse'}" />
+                        </Border>
+                        <Border Margin="0,0,8,8" Style="{StaticResource Chip}" Padding="10,4">
+                            <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding IncludeJunk, Converter={StaticResource YesNo}, ConverterParameter='Spams inclus'}" />
+                        </Border>
+                        <Border Margin="0,0,8,8" Style="{StaticResource Chip}" Padding="10,4">
+                            <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding AutoMapFolders, Converter={StaticResource YesNo}, ConverterParameter='Correspondance auto'}" />
+                        </Border>
+                        <Border Margin="0,0,8,8" Style="{StaticResource Chip}" Padding="10,4">
+                            <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding VerifyAfterCopy, Converter={StaticResource YesNo}, ConverterParameter='Vérification finale'}" />
+                        </Border>
+                    </WrapPanel>
+
+                    <Border Margin="0,12,0,24" Padding="14,12" CornerRadius="8" Background="{DynamicResource Brush.Status.SuccessSoft}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="20" Foreground="{DynamicResource Brush.Status.Success}" />
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Body}" TextWrapping="Wrap"
+                                       Text="Connexions chiffrées TLS · mots de passe chiffrés DPAPI · aucun doublon, même en relançant la migration." />
+                        </StackPanel>
+                    </Border>
+
+                    <ui:Button HorizontalAlignment="Left" Appearance="Primary" Padding="28,12" FontSize="15" Command="{Binding StartCommand}"
+                               Icon="{ui:SymbolIcon Play24}" Content="Démarrer la migration" AutomationProperties.Name="Démarrer la migration" />
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+
+        <!-- Barre d'actions -->
+        <Grid Grid.Row="3" Margin="0,16,0,0">
+            <ui:Button Appearance="Secondary" Command="{Binding BackCommand}" Icon="{ui:SymbolIcon ArrowLeft24}" Content="Retour"
+                       Visibility="{Binding IsFirstStep, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}" />
+            <ui:Button HorizontalAlignment="Right" Appearance="Primary" Padding="20,8" Command="{Binding NextCommand}"
+                       Content="{Binding NextLabel}" Icon="{ui:SymbolIcon ArrowRight24}"
+                       Visibility="{Binding IsLastStep, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}" />
+        </Grid>
+    </Grid>
+</Page>

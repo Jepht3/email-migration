@@ -1,0 +1,17 @@
+# Build
+bin/
+obj/
+publish/
+installer/Output/
+*.user
+*.suo
+.vs/
+.vscode/
+TestResults/
+*.binlog
+
+# Données locales
+*.db
+*.db-shm
+*.db-wal
+logs/

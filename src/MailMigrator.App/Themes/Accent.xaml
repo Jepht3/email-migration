@@ -1,0 +1,17 @@
+<!--
+    Couleur d'accent LEWEBMAX : c'est le SEUL fichier à modifier pour coller à la charte.
+    La variante sombre est utilisée sur fond foncé ; ThemeService en dérive les brosses
+    (Brush.Accent, Brush.AccentSoft, Color.AccentGradientStart…).
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="Color.Accent.Light">#2563EB</Color>
+    <Color x:Key="Color.Accent.Dark">#3B82F6</Color>
+
+    <!-- Valeurs par défaut, remplacées au démarrage par ThemeService. -->
+    <SolidColorBrush x:Key="Brush.Accent" Color="#2563EB" />
+    <SolidColorBrush x:Key="Brush.AccentSoft" Color="#1F2563EB" />
+    <SolidColorBrush x:Key="Brush.OnAccent" Color="#FFFFFF" />
+    <Color x:Key="Color.AccentGradientStart">#60A5FA</Color>
+    <Color x:Key="Color.AccentGradientEnd">#2563EB</Color>
+</ResourceDictionary>

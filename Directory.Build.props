@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Version>0.2.0</Version>
+    <Company>LEWEBMAX</Company>
+    <Product>LEWEBMAX Mail Migrator</Product>
+    <Copyright>© LEWEBMAX</Copyright>
+    <NeutralLanguage>fr-FR</NeutralLanguage>
+  </PropertyGroup>
+</Project>
