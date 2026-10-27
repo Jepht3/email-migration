@@ -37,9 +37,9 @@ il télécharge GreenMail au premier lancement (somme SHA-1 vérifiée), le dém
 ## Mode démonstration
 
 `dotnet run --project src/MailMigrator.App -- --demo` affiche 5 migrations simulées et un historique fictif, sans toucher à aucune boîte.
-Les données réelles (état des migrations, historique) sont dans `%LOCALAPPDATA%ewebmaxmailmigratormigrations.db`.
+Les données réelles (état des migrations, historique) sont dans `%LOCALAPPDATA%\LEWEBMAX\MailMigrator\migrations.db`.
 
-## captures du design
+## Captures du design
 
 ```bash
 dotnet run --project src/MailMigrator.App -- --screenshots docs/captures
