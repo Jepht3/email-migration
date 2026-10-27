@@ -8,6 +8,7 @@
     <RootNamespace>MailMigrator.App</RootNamespace>
     <AssemblyName>LewebmaxMailMigrator</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

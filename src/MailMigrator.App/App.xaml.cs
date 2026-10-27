@@ -31,9 +31,41 @@ public partial class App : Application
     public static string DataFolder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LEWEBMAX", "MailMigrator");
 
+    private static System.Threading.Mutex? _singleInstance;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hwnd);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hwnd, int command);
+
+    /// <summary>
+    /// Une seule instance (hors démo) : deux fenêtres reprendraient les mêmes migrations en double.
+    /// Un second lancement ramène simplement la fenêtre existante au premier plan.
+    /// </summary>
+    private static bool IsAlreadyRunning()
+    {
+        if (IsDemo) return false;
+        _singleInstance = new System.Threading.Mutex(true, @"Local\LEWEBMAX.MailMigrator", out var createdNew);
+        if (createdNew) return false;
+        var current = System.Diagnostics.Process.GetCurrentProcess();
+        var other = System.Diagnostics.Process.GetProcessesByName(current.ProcessName).FirstOrDefault(p => p.Id != current.Id && p.MainWindowHandle != IntPtr.Zero);
+        if (other is not null)
+        {
+            ShowWindow(other.MainWindowHandle, 9); // SW_RESTORE
+            SetForegroundWindow(other.MainWindowHandle);
+        }
+        return true;
+    }
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (IsAlreadyRunning())
+        {
+            Shutdown();
+            return;
+        }
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
