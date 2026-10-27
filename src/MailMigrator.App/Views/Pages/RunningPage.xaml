@@ -327,7 +327,11 @@
                                             <ColumnDefinition Width="20" />
                                         </Grid.ColumnDefinitions>
                                         <ui:SymbolIcon Symbol="{Binding Role, Converter={StaticResource FolderSymbol}}" FontSize="16" Foreground="{DynamicResource Brush.Text.Secondary}" />
-                                        <TextBlock x:Name="Name" Grid.Column="1" Style="{StaticResource Text.Body}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" ToolTip="{Binding Tooltip}">
+                                            <TextBlock x:Name="Name" Style="{StaticResource Text.Body}" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Style="{StaticResource Text.Caption}" FontSize="11" Text="{Binding Origin}" TextTrimming="CharacterEllipsis"
+                                                       Visibility="{Binding Origin, Converter={StaticResource HasValueToVisibility}}" />
+                                        </StackPanel>
                                         <c:GradientBar Grid.Column="2" Height="6" Margin="8,0" Value="{Binding Fraction}" TrackBrush="{DynamicResource Brush.Track}"
                                                        StartColor="{Binding DataContext.ColorIndex, ElementName=DetailPanel, Converter={StaticResource JobColor}, ConverterParameter=Start}"
                                                        EndColor="{Binding DataContext.ColorIndex, ElementName=DetailPanel, Converter={StaticResource JobColor}, ConverterParameter=End}" />

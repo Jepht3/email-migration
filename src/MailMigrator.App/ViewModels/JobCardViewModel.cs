@@ -148,6 +148,23 @@ public sealed partial class FolderRowViewModel : ObservableObject
     public string SourceName { get; }
     public SpecialFolder Role { get; }
 
+    /// <summary>Nom lisible : « INBOX.Sent » → « Sent », « INBOX/Clients/Dupont » → « Clients / Dupont ».</summary>
+    public string DisplayName => Pretty(Name);
+
+    /// <summary>« depuis Junk » quand le dossier source porte un autre nom (fusion, correspondance).</summary>
+    public string? Origin => Pretty(SourceName) == DisplayName ? null : $"depuis {Pretty(SourceName)}";
+
+    public string Tooltip => $"{SourceName} → {Name}";
+
+    private static string Pretty(string path)
+    {
+        if (path.Length <= 6 || !path.StartsWith("INBOX", StringComparison.OrdinalIgnoreCase) || path[5] is not ('.' or '/'))
+            return path.Replace("/", " / ");
+        // Serveur à espace de noms « INBOX. » (Courier, cPanel) : le séparateur est le point.
+        var separator = path[5];
+        return path[6..].Replace(separator.ToString(), " / ");
+    }
+
     [ObservableProperty] private double _fraction;
     [ObservableProperty] private int _processed;
     [ObservableProperty] private int _total;
