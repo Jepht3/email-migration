@@ -23,11 +23,16 @@ dotnet run --project src/MailMigrator.App
 dotnet test
 ```
 
-Les tests qui interrogent de vrais serveurs (DNS, ISPDB, IMAP) sont désactivés par défaut :
+Les tests qui touchent de vrais serveurs sont désactivés par défaut (ils passent sans rien faire) :
 
-```bash
-MAILMIGRATOR_NETWORK_TESTS=1 dotnet test --filter Category=Network
-```
+| Catégorie | Ce qui est testé | Lancement |
+|---|---|---|
+| `Integration` | Adaptateur MailKit et moteur complet contre un serveur IMAP réel (GreenMail) | `scripts\test-integration.ps1` (Java, sans Docker) ou `docker compose -f docker/docker-compose.yml up -d` puis `MAILMIGRATOR_GREENMAIL=127.0.0.1:3143 dotnet test --filter Category=Integration` |
+| `Live` | Détection, test de connexion et migration sur deux boîtes de test **jetables** | `scripts\test-live.ps1` (demande les identifiants, rien n'est enregistré) |
+| `Network` | Détection des serveurs sur de vrais domaines (Gmail, Orange…) | `MAILMIGRATOR_NETWORK_TESTS=1 dotnet test --filter Category=Network` |
+
+`scripts\test-integration.ps1` nécessite Java (`winget install EclipseAdoptium.Temurin.21.JRE`) ;
+il télécharge GreenMail au premier lancement (somme SHA-1 vérifiée), le démarre, lance les tests puis l'arrête.
 
 ## Captures du design
 

@@ -15,3 +15,6 @@ TestResults/
 *.db-shm
 *.db-wal
 logs/
+
+# Outils de test téléchargés
+tools/greenmail/*.jar
