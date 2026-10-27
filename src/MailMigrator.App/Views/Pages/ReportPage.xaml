@@ -24,6 +24,12 @@
                         <Border CornerRadius="36" Background="{DynamicResource Brush.Status.WarningSoft}" Visibility="{Binding HasErrors, Converter={StaticResource BoolToVisibility}}">
                             <ui:SymbolIcon Symbol="Warning24" Filled="True" FontSize="36" Foreground="{DynamicResource Brush.Status.Warning}" />
                         </Border>
+                        <Grid Visibility="{Binding IsInProgress, Converter={StaticResource BoolToVisibility}}">
+                            <c:ProgressGauge Thickness="6" Value="{Binding Progress}" TrackBrush="{DynamicResource Brush.Track}"
+                                             StartColor="{DynamicResource Color.AccentGradientStart}" EndColor="{DynamicResource Color.AccentGradientEnd}" />
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Text.NumberSmall}"
+                                       Text="{Binding Progress, Converter={StaticResource Percent}}" />
+                        </Grid>
                     </Grid>
                     <StackPanel Grid.Column="1" Margin="20,0" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
@@ -38,7 +44,9 @@
                         <ui:Button HorizontalAlignment="Stretch" Appearance="Primary" Command="{Binding ExportHtmlCommand}" Icon="{ui:SymbolIcon DocumentArrowDown20}" Content="Exporter en HTML" />
                         <ui:Button HorizontalAlignment="Stretch" Margin="0,8,0,0" Appearance="Secondary" Command="{Binding ExportCsvCommand}" Icon="{ui:SymbolIcon DocumentTable24}" Content="Exporter en CSV" />
                         <ui:Button HorizontalAlignment="Stretch" Margin="0,8,0,0" Appearance="Secondary" Command="{Binding RetryFailedCommand}" Icon="{ui:SymbolIcon ArrowClockwise24}" Content="Réessayer les échecs"
-                                   Visibility="{Binding Entry.Failed, Converter={StaticResource HasValueToVisibility}}" />
+                                   Visibility="{Binding CanRetry, Converter={StaticResource BoolToVisibility}}" />
+                        <ui:Button HorizontalAlignment="Stretch" Margin="0,8,0,0" Appearance="Secondary" Command="{Binding ShowRunningCommand}" Icon="{ui:SymbolIcon ArrowSync24}" Content="Voir la progression"
+                                   Visibility="{Binding IsInProgress, Converter={StaticResource BoolToVisibility}}" />
                     </StackPanel>
                 </Grid>
             </Border>
