@@ -34,6 +34,8 @@ public static class ImapErrorTranslator
     {
         var text = Flatten(exception).ToLowerInvariant();
 
+        if (exception is OAuth.OAuthException) return ConnectionError.OAuthFailed;
+
         if (exception is OperationCanceledException or TimeoutException || text.Contains("timed out") || text.Contains("délai"))
             return ConnectionError.Timeout;
 

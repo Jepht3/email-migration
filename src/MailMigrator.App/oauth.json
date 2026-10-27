@@ -1,0 +1,11 @@
+{
+  // Identifiants OAuth2 de l'application LEWEBMAX Mail Migrator (voir docs/OAUTH.md).
+  // Laissez vide ici et placez les vraies valeurs dans oauth.local.json (non versionné).
+  "google": {
+    "clientId": "",
+    "clientSecret": ""
+  },
+  "microsoft": {
+    "clientId": ""
+  }
+}

@@ -27,7 +27,7 @@ public sealed class RetryPolicy
         AuthenticationException => false,
         SslHandshakeException => false,
         OperationCanceledException => false,
-        SocketException or IOException or TimeoutException => true,
+        SocketException or IOException or TimeoutException or HttpRequestException => true,
         ImapProtocolException or ServiceNotConnectedException or ServiceNotAuthenticatedException => true,
         _ => ex.InnerException is not null && IsTransient(ex.InnerException),
     };

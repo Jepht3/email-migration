@@ -1,5 +1,6 @@
 using MailMigrator.Core.Abstractions;
 using MailMigrator.Core.Connectivity;
+using MailMigrator.Core.Connectivity.OAuth;
 using MailMigrator.Core.Imap;
 using MailMigrator.Core.Models;
 using MailMigrator.Core.Persistence;
@@ -14,11 +15,15 @@ public sealed class MigrationService(
     IMailboxConnectionFactory connections,
     ISecretProtector secrets,
     RetryPolicy? retry = null,
-    ILogger<MigrationEngine>? logger = null)
+    ILogger<MigrationEngine>? logger = null,
+    AuthProviderFactory? authentication = null)
 {
     public IMigrationStore Store => store;
 
-    /// <summary>Enregistre une tâche ; les mots de passe ne sont stockés que chiffrés.</summary>
+    /// <summary>
+    /// Enregistre une tâche ; les secrets (mot de passe, ou jeton OAuth2 sérialisé par
+    /// <see cref="OAuthCredential.Serialize"/>) ne sont stockés que chiffrés.
+    /// </summary>
     public Guid CreateJob(MigrationJobDefinition definition, string sourcePassword, string destinationPassword)
     {
         store.CreateJob(definition, secrets.Protect(sourcePassword), secrets.Protect(destinationPassword));
@@ -38,10 +43,11 @@ public sealed class MigrationService(
         if (source is null || destination is null)
             throw new InvalidOperationException("Les mots de passe de cette tâche ont été effacés : saisissez-les à nouveau pour la relancer.");
 
+        var auth = authentication ?? AuthProviderFactory.PasswordOnly;
         var engine = new MigrationEngine(store, connections, retry, logger);
         return await engine.RunAsync(job.Definition.Id,
-            new PasswordAuthProvider(secrets.Unprotect(source)),
-            new PasswordAuthProvider(secrets.Unprotect(destination)),
+            auth.Create(secrets.Unprotect(source)),
+            auth.Create(secrets.Unprotect(destination)),
             job.Progress, job.PauseController, cancellationToken);
     }
 }

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MailMigrator.App.Services;
 using MailMigrator.Core.Connectivity;
+using MailMigrator.Core.Connectivity.OAuth;
 using MailMigrator.Core.Discovery;
 using MailMigrator.Core.Models;
 
@@ -25,7 +26,13 @@ public enum TestState
 }
 
 /// <summary>Services du Core utilisés par l'assistant pour chaque boîte.</summary>
-public sealed record AccountServices(ServerDiscoveryService Discovery, ConnectionTester Tester, DialogService Dialogs);
+public sealed record AccountServices(
+    ServerDiscoveryService Discovery,
+    ConnectionTester Tester,
+    DialogService Dialogs,
+    OAuthRegistry OAuth,
+    OAuthSignIn SignIn,
+    OAuthClient OAuthClient);
 
 /// <summary>Une paire source → destination dans l'assistant.</summary>
 public sealed partial class AccountPairViewModel : ObservableObject
@@ -92,7 +99,90 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     public bool IsTestOk => Test == TestState.Success;
     public bool IsTestFailed => Test == TestState.Failure;
     public bool IsUnencrypted => Security == SecurityMode.None;
-    public bool IsComplete => Email.Contains('@') && Password.Length > 0;
+    public bool IsComplete => Email.Contains('@') && Secret is not null;
+
+    // ---------- OAuth2 « Se connecter avec… » ----------
+
+    private OAuthTokens? _oauthTokens;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOAuth), nameof(UsesPassword), nameof(OAuthAccountLabel))]
+    private OAuthCredential? _oauthCredential;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SignInCommand))]
+    private bool _isSigningIn;
+
+    /// <summary>Fournisseur OAuth configuré pour le serveur détecté (Google, Microsoft), sinon null.</summary>
+    public OAuthProviderSettings? OAuthProvider => string.IsNullOrWhiteSpace(Host) ? null : services.OAuth.ForHost(Host);
+
+    public bool CanUseOAuth => OAuthProvider is not null && !IsOAuth;
+    public bool IsOAuth => OauthCredential is not null;
+    public bool UsesPassword => !IsOAuth;
+    public string SignInLabel => $"Se connecter avec {OAuthProvider?.DisplayName}";
+    public string OAuthAccountLabel => OauthCredential is { } c ? $"Connecté avec {services.OAuth.Get(c.Provider)?.DisplayName ?? c.Provider} : {c.Email}" : "";
+
+    /// <summary>Fournisseur reconnu mais connexion OAuth non configurée dans l'application.</summary>
+    public bool OAuthNotConfigured => OAuthProvider is null && !string.IsNullOrWhiteSpace(Host) && OAuthRegistry.KeyForHost(Host) is not null;
+
+    /// <summary>Ce qui sera chiffré et stocké pour la migration : jeton OAuth2 ou mot de passe.</summary>
+    public string? Secret => OauthCredential?.Serialize() ?? (Password.Length > 0 ? Password : null);
+
+    /// <summary>Authentification à utiliser pour cette boîte (test, aperçu des dossiers).</summary>
+    public IAuthProvider? CreateAuth() => OauthCredential is { } credential && OAuthProvider is { } provider
+        ? new OAuth2AuthProvider(provider, credential, services.OAuthClient, _oauthTokens)
+        : Password.Length > 0 ? new PasswordAuthProvider(Password) : null;
+
+    partial void OnHostChanged(string value)
+    {
+        Test = TestState.NotTested;
+        OnPropertyChanged(nameof(OAuthProvider));
+        OnPropertyChanged(nameof(CanUseOAuth));
+        OnPropertyChanged(nameof(SignInLabel));
+        OnPropertyChanged(nameof(OAuthNotConfigured));
+    }
+
+    partial void OnOauthCredentialChanged(OAuthCredential? value) => OnPropertyChanged(nameof(CanUseOAuth));
+
+    private bool CanSignIn() => !IsSigningIn;
+
+    [RelayCommand(CanExecute = nameof(CanSignIn))]
+    private async Task SignInAsync()
+    {
+        if (OAuthProvider is not { } provider) return;
+        IsSigningIn = true;
+        try
+        {
+            var result = await services.SignIn.SignInAsync(provider, Email.Contains('@') ? Email.Trim() : null, OpenUrl, CancellationToken.None);
+            if (Email.Contains('@') && !result.Credential.Email.Equals(Email.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                services.Dialogs.Notify("Mauvais compte", $"Vous vous êtes connecté avec {result.Credential.Email} au lieu de {Email.Trim()}. Recommencez avec le bon compte.",
+                    Wpf.Ui.Controls.ControlAppearance.Caution, Wpf.Ui.Controls.SymbolRegular.Warning24);
+                return;
+            }
+            _oauthTokens = result.Tokens;
+            OauthCredential = result.Credential;
+            await TestAsync();
+        }
+        catch (OAuthException ex)
+        {
+            Error = ConnectionErrorInfo.For(ConnectionError.OAuthFailed) with { Explanation = ex.Message };
+            TechnicalDetail = ex.Message;
+            Test = TestState.Failure;
+        }
+        finally
+        {
+            IsSigningIn = false;
+        }
+    }
+
+    [RelayCommand]
+    private void UsePassword()
+    {
+        OauthCredential = null;
+        _oauthTokens = null;
+        Test = TestState.NotTested;
+    }
 
     public IReadOnlyList<SecurityOption> SecurityOptions { get; } =
     [
@@ -109,11 +199,12 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     partial void OnEmailChanged(string value)
     {
         Test = TestState.NotTested;
+        // Autre adresse = autre compte : l'autorisation OAuth précédente ne s'applique plus.
+        if (OauthCredential is not null && !OauthCredential.Email.Equals(value.Trim(), StringComparison.OrdinalIgnoreCase)) UsePassword();
         if (!_suppressDetection) _ = DetectAsync(value);
     }
 
     partial void OnPasswordChanged(string value) => Test = TestState.NotTested;
-    partial void OnHostChanged(string value) => Test = TestState.NotTested;
     partial void OnPortChanged(string value) => Test = TestState.NotTested;
     partial void OnSecurityChanged(SecurityMode value) => Test = TestState.NotTested;
 
@@ -180,7 +271,7 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     [RelayCommand(CanExecute = nameof(CanTest))]
     private async Task TestAsync()
     {
-        if (Password.Length == 0)
+        if (CreateAuth() is not { } auth)
         {
             ApplyTestResult(ConnectionError.MissingPassword);
             return;
@@ -193,7 +284,7 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
         }
 
         Test = TestState.Testing;
-        var result = await services.Tester.TestAsync(endpoint, new PasswordAuthProvider(Password));
+        var result = await services.Tester.TestAsync(endpoint, auth);
         ServerLabel = endpoint.Describe();
         TestSummary = result.Success
             ? $"{result.FolderCount} dossier(s){(result.SupportsSpecialUse ? " · SPECIAL-USE" : "")}"
@@ -219,6 +310,10 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
                     : Host.Contains("yahoo", StringComparison.OrdinalIgnoreCase) ? "https://login.yahoo.com/account/security"
                     : Host.Contains("me.com", StringComparison.OrdinalIgnoreCase) ? "https://account.apple.com"
                     : "https://account.microsoft.com/security");
+                break;
+            case ConnectionError.OAuthFailed:
+                UsePassword();
+                await SignInAsync();
                 break;
             case ConnectionError.CertificateInvalid or ConnectionError.Unknown:
                 await ShowDetailsAsync();
