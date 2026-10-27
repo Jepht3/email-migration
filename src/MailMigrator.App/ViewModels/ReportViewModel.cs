@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MailMigrator.App.Services;
 using MailMigrator.App.Views.Pages;
+using MailMigrator.Core.Abstractions;
 using MailMigrator.Core.Formatting;
 using MailMigrator.Core.Models;
 using MailMigrator.Core.Reporting;
@@ -20,12 +21,14 @@ public sealed partial class ReportViewModel : ObservableObject
     private readonly IMigrationHistory _history;
     private readonly AppNavigation _navigation;
     private readonly DialogService _dialogs;
+    private readonly IMigrationRunner _runner;
 
-    public ReportViewModel(IMigrationHistory history, AppNavigation navigation, DialogService dialogs)
+    public ReportViewModel(IMigrationHistory history, AppNavigation navigation, DialogService dialogs, IMigrationRunner runner)
     {
         _history = history;
         _navigation = navigation;
         _dialogs = dialogs;
+        _runner = runner;
         MessagesView = CollectionViewSource.GetDefaultView(Messages);
         MessagesView.Filter = Matches;
     }
@@ -118,7 +121,19 @@ public sealed partial class ReportViewModel : ObservableObject
     private void ExportCsv() => NotYet("Export CSV");
 
     [RelayCommand]
-    private void RetryFailed() => NotYet("Nouvelle tentative des échecs");
+    private void RetryFailed()
+    {
+        if (Entry is null) return;
+        if (_runner.RetryFailed(Entry.Id))
+        {
+            _dialogs.Notify("Nouvelle tentative", $"Les {Entry.Failed} message(s) en échec sont relancés.", ControlAppearance.Info, SymbolRegular.ArrowClockwise24);
+            _navigation.Navigate(typeof(RunningPage));
+        }
+        else
+        {
+            _dialogs.Notify("Nouvelle tentative impossible", "Aucun échec à relancer, ou la migration est déjà en cours.", ControlAppearance.Caution, SymbolRegular.Warning24);
+        }
+    }
 
     [RelayCommand]
     private void Back() => _navigation.Navigate(typeof(HistoryPage));

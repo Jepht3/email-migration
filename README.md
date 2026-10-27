@@ -34,7 +34,12 @@ Les tests qui touchent de vrais serveurs sont désactivés par défaut (ils pass
 `scripts\test-integration.ps1` nécessite Java (`winget install EclipseAdoptium.Temurin.21.JRE`) ;
 il télécharge GreenMail au premier lancement (somme SHA-1 vérifiée), le démarre, lance les tests puis l'arrête.
 
-## Captures du design
+## Mode démonstration
+
+`dotnet run --project src/MailMigrator.App -- --demo` affiche 5 migrations simulées et un historique fictif, sans toucher à aucune boîte.
+Les données réelles (état des migrations, historique) sont dans `%LOCALAPPDATA%ewebmaxmailmigratormigrations.db`.
+
+## captures du design
 
 ```bash
 dotnet run --project src/MailMigrator.App -- --screenshots docs/captures
@@ -59,6 +64,6 @@ le logo dans `src/MailMigrator.App/Assets/Logo.xaml`.
 - [x] Étape 3a — détection des serveurs (autoconfig → ISPDB → autodiscover → MX + préfixes) et test de connexion avec erreurs en français
 - [x] Étape 3b — moteur de copie d'une tâche : reprise après arrêt, déduplication, reconnexion, pause, SQLite, mots de passe DPAPI
 - [ ] Étape 3c — 5 tâches en parallèle, limites de débit, docker-compose de test
-- [ ] Étape 3d — branchement de l'interface sur le vrai moteur, notifications Windows
+- [x] Étape 3d — interface branchée sur le vrai moteur (aperçu réel des dossiers, file de 1 à 5 tâches, reprise au démarrage, réessayer les échecs), notifications Windows
 - [ ] Étape 3e — rapport, vérification finale, exports HTML / CSV
 - [ ] Étape 3f — installeur Inno Setup

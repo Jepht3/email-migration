@@ -34,7 +34,8 @@ public static class FolderMapper
             var included = !folder.IsVirtual
                            && !(role == SpecialFolder.Trash && !options.IncludeTrash)
                            && !(role == SpecialFolder.Junk && !options.IncludeJunk)
-                           && !IsExcluded(relative, options.ExcludedFolders);
+                           && !IsExcluded(relative, options.ExcludedFolders)
+                           && !options.SkippedSourceFolders.Contains(folder.Path);
             result.Add(new FolderMapping(folder.Path, destination_, role, origin, count, included));
         }
         return result;

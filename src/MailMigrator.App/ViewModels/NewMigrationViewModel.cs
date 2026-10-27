@@ -7,6 +7,7 @@ using MailMigrator.App.Views.Pages;
 using MailMigrator.Core.Abstractions;
 using MailMigrator.Core.Connectivity;
 using MailMigrator.Core.Folders;
+using MailMigrator.Core.Imap;
 using MailMigrator.Core.Import;
 using MailMigrator.Core.Models;
 using Microsoft.Win32;
@@ -42,6 +43,8 @@ public sealed partial class FolderMappingViewModel(FolderMapping mapping) : Obse
         _ => "Manuel",
     };
 
+    public string ProposedDestination { get; } = mapping.DestinationPath;
+
     [ObservableProperty] private string _destination = mapping.DestinationPath;
     [ObservableProperty] private bool _included = mapping.Included;
 }
@@ -54,14 +57,18 @@ public sealed partial class NewMigrationViewModel : ObservableObject
     private readonly AppNavigation _navigation;
     private readonly DialogService _dialogs;
     private readonly AccountServices _services;
+    private readonly IMailboxConnectionFactory _connections;
     private int _nextColor;
+    private string? _previewFor;
 
-    public NewMigrationViewModel(IMigrationRunner runner, AppNavigation navigation, DialogService dialogs, AccountServices services)
+    public NewMigrationViewModel(IMigrationRunner runner, AppNavigation navigation, DialogService dialogs, AccountServices services,
+        IMailboxConnectionFactory connections)
     {
         _runner = runner;
         _navigation = navigation;
         _dialogs = dialogs;
         _services = services;
+        _connections = connections;
         Steps =
         [
             new(0, "Comptes", "Boîtes source et destination"),
@@ -76,8 +83,12 @@ public sealed partial class NewMigrationViewModel : ObservableObject
     public IReadOnlyList<StepViewModel> Steps { get; }
     public ObservableCollection<AccountPairViewModel> Pairs { get; } = [];
     public ObservableCollection<FolderMappingViewModel> FolderMappings { get; } = [];
-    public IReadOnlyList<string> DestinationFolders { get; } =
-        ["INBOX", "Envoyés", "Brouillons", "Corbeille", "Spam", "Archives", "Archives/2023", "Clients/Dupont", "Factures"];
+    public ObservableCollection<string> DestinationFolders { get; } = [];
+
+    [ObservableProperty] private bool _isLoadingFolders;
+    [ObservableProperty] private string? _folderPreviewError;
+    [ObservableProperty] private string _folderPreviewCaption = "Aperçu pour la première boîte. Modifiez une destination si besoin ; les dossiers absents seront créés.";
+    [ObservableProperty] private bool _isStarting;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsFirstStep), nameof(IsLastStep), nameof(NextLabel))]
@@ -167,11 +178,103 @@ public sealed partial class NewMigrationViewModel : ObservableObject
     private bool CanGoBack() => Step > 0;
 
     [RelayCommand]
-    private void Next()
+    private async Task NextAsync()
     {
-        if (Step == 0 && FolderMappings.Count == 0) LoadFolderPreview();
+        if (Step == 0)
+        {
+            if (!ValidatePairs()) return;
+            Step = 1;
+            UpdateSteps();
+            await LoadFolderPreviewAsync();
+            return;
+        }
         if (Step < 2) Step++;
         UpdateSteps();
+    }
+
+    private IEnumerable<AccountPairViewModel> FilledPairs =>
+        Pairs.Where(p => p.Source.Email.Length > 0 || p.Destination.Email.Length > 0);
+
+    /// <summary>Chaque boîte saisie doit avoir un serveur et un mot de passe ; sinon message précis.</summary>
+    private bool ValidatePairs()
+    {
+        var pairs = FilledPairs.ToList();
+        if (pairs.Count == 0)
+        {
+            _dialogs.Notify("Aucune boîte à migrer", "Saisissez au moins une adresse source et une adresse destination.", ControlAppearance.Caution, SymbolRegular.Warning24);
+            return false;
+        }
+        foreach (var pair in pairs)
+        {
+            foreach (var side in new[] { pair.Source, pair.Destination })
+            {
+                string? problem = !side.Email.Contains('@') ? "adresse email invalide"
+                    : side.Password.Length == 0 ? "mot de passe manquant"
+                    : side.IsDetecting ? "détection du serveur en cours, patientez une seconde"
+                    : side.Endpoint is null ? "serveur IMAP non renseigné (bouton « Modifier »)"
+                    : null;
+                if (problem is null) continue;
+                _dialogs.Notify($"Migration {pair.Number} — {side.Role}", $"{(side.Email.Length > 0 ? side.Email : "Boîte")} : {problem}.",
+                    ControlAppearance.Caution, SymbolRegular.Warning24);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>Aperçu réel : liste les dossiers des deux boîtes de la première paire et applique FolderMapper.</summary>
+    private async Task LoadFolderPreviewAsync()
+    {
+        var pair = FilledPairs.FirstOrDefault();
+        if (pair?.Source.Endpoint is not { } source || pair.Destination.Endpoint is not { } destination) return;
+        var key = $"{source}|{destination}|{pair.Source.Password.GetHashCode()}|{pair.Destination.Password.GetHashCode()}";
+        if (key == _previewFor && FolderMappings.Count > 0)
+        {
+            ApplyToggles();
+            return;
+        }
+
+        IsLoadingFolders = true;
+        FolderPreviewError = null;
+        FolderMappings.Clear();
+        DestinationFolders.Clear();
+        FolderPreviewCaption = $"Dossiers de {pair.Source.Email} → {pair.Destination.Email}. Modifiez une destination si besoin ; les dossiers absents seront créés.";
+        try
+        {
+            await using var src = _connections.Create(source, new PasswordAuthProvider(pair.Source.Password));
+            await using var dst = _connections.Create(destination, new PasswordAuthProvider(pair.Destination.Password));
+            await Task.WhenAll(src.ConnectAsync(default), dst.ConnectAsync(default));
+            var srcFolders = await src.ListFoldersAsync(default);
+            var dstFolders = await dst.ListFoldersAsync(default);
+            var counts = new Dictionary<string, int>();
+            foreach (var f in srcFolders.Where(f => f.CanSelect))
+                counts[f.Path] = (await src.GetFolderStateAsync(f.Path, default)).Count;
+
+            var mappings = FolderMapper.Map(
+                new MailboxLayout(srcFolders, src.NamespacePrefix, src.DefaultSeparator),
+                new MailboxLayout(dstFolders, dst.NamespacePrefix, dst.DefaultSeparator),
+                BuildOptions(), counts);
+            foreach (var path in dstFolders.Where(f => f.CanSelect).Select(f => f.Path).Union(mappings.Select(m => m.DestinationPath)).OrderBy(p => p))
+                DestinationFolders.Add(path);
+            foreach (var m in mappings.Where(m => !m.SourcePath.Equals("[Gmail]", StringComparison.Ordinal)))
+                FolderMappings.Add(new FolderMappingViewModel(m));
+            _previewFor = key;
+        }
+        catch (Exception ex)
+        {
+            var info = ConnectionErrorInfo.For(ImapErrorTranslator.Translate(ex, source.Host));
+            FolderPreviewError = $"Impossible de lire les dossiers : {info.Title}. {info.Explanation}";
+        }
+        finally
+        {
+            IsLoadingFolders = false;
+        }
+    }
+
+    private void ApplyToggles()
+    {
+        SetIncluded(SpecialFolder.Trash, IncludeTrash);
+        SetIncluded(SpecialFolder.Junk, IncludeJunk);
     }
 
     [RelayCommand]
@@ -198,8 +301,8 @@ public sealed partial class NewMigrationViewModel : ObservableObject
         OnPropertyChanged(nameof(TestedOkCount));
     }
 
-    /// <summary>Démo : aperçu de correspondance tel que le produira FolderMapper (étape 3b).</summary>
-    private void LoadFolderPreview()
+    /// <summary>Démo et captures : aperçu de correspondance fictif.</summary>
+    private void LoadDemoFolderPreview()
     {
         FolderMappings.Clear();
         FolderMapping[] preview =
@@ -230,32 +333,61 @@ public sealed partial class NewMigrationViewModel : ObservableObject
     partial void OnDateFromChanged(DateTime? value) => OnPropertyChanged(nameof(DateSummary));
     partial void OnDateToChanged(DateTime? value) => OnPropertyChanged(nameof(DateSummary));
 
+    private MigrationOptions BuildOptions() => new()
+    {
+        IncludeTrash = IncludeTrash,
+        IncludeJunk = IncludeJunk,
+        AutoMapFolders = AutoMapFolders,
+        VerifyAfterCopy = VerifyAfterCopy,
+        ErasePasswordsWhenDone = ErasePasswords,
+        From = UseDateRange && DateFrom is { } f ? DateOnly.FromDateTime(f) : null,
+        To = UseDateRange && DateTo is { } t ? DateOnly.FromDateTime(t) : null,
+        ExcludedFolders = ExcludedFolders.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+    };
+
     [RelayCommand]
     private void Start()
     {
-        var options = new MigrationOptions
+        if (!ValidatePairs())
         {
-            IncludeTrash = IncludeTrash,
-            IncludeJunk = IncludeJunk,
-            AutoMapFolders = AutoMapFolders,
-            VerifyAfterCopy = VerifyAfterCopy,
-            ErasePasswordsWhenDone = ErasePasswords,
-            From = UseDateRange && DateFrom is { } f ? DateOnly.FromDateTime(f) : null,
-            To = UseDateRange && DateTo is { } t ? DateOnly.FromDateTime(t) : null,
-            ExcludedFolders = ExcludedFolders.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
-        };
-        foreach (var pair in Pairs.Where(p => p.Source.Email.Contains('@') && p.Destination.Email.Contains('@')))
+            ShowStep(0);
+            return;
+        }
+
+        var options = BuildOptions();
+        var first = true;
+        foreach (var pair in FilledPairs.ToList())
         {
+            var jobOptions = options;
+            if (first && _previewFor is not null)
+            {
+                // Les choix faits dans l'aperçu s'appliquent à la boîte qu'il montre (la première).
+                jobOptions = options with
+                {
+                    IncludeTrash = options.IncludeTrash || FolderMappings.Any(m => m.Role == SpecialFolder.Trash && m.Included),
+                    IncludeJunk = options.IncludeJunk || FolderMappings.Any(m => m.Role == SpecialFolder.Junk && m.Included),
+                    SkippedSourceFolders = FolderMappings.Where(m => !m.Included && m.Role is not (SpecialFolder.Trash or SpecialFolder.Junk)).Select(m => m.Source).ToList(),
+                    FolderOverrides = FolderMappings.Where(m => m.Destination != m.ProposedDestination && m.Destination.Trim().Length > 0)
+                        .ToDictionary(m => m.Source, m => m.Destination.Trim()),
+                };
+            }
+            first = false;
             _runner.Enqueue(new MigrationJobDefinition
             {
                 ColorIndex = pair.ColorIndex,
-                SourceEmail = pair.Source.Email,
-                DestinationEmail = pair.Destination.Email,
-                Options = options,
-            });
+                SourceEmail = pair.Source.Email.Trim(),
+                Source = pair.Source.Endpoint,
+                DestinationEmail = pair.Destination.Email.Trim(),
+                Destination = pair.Destination.Endpoint,
+                Options = jobOptions,
+            }, pair.Source.Password, pair.Destination.Password);
         }
+
+        // Les mots de passe ne restent pas dans l'assistant : seule la copie chiffrée est conservée.
         Pairs.Clear();
         FolderMappings.Clear();
+        DestinationFolders.Clear();
+        _previewFor = null;
         AddPair();
         Step = 0;
         UpdateSteps();
@@ -279,7 +411,8 @@ public sealed partial class NewMigrationViewModel : ObservableObject
             pair.Source.SeedDemo(src, srcResult);
             pair.Destination.SeedDemo(dst, dstResult);
         }
-        LoadFolderPreview();
+        LoadDemoFolderPreview();
+        foreach (var path in FolderMappings.Select(m => m.Destination).Distinct()) DestinationFolders.Add(path);
         UpdateSteps();
     }
 }

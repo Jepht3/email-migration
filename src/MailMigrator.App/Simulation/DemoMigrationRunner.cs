@@ -38,7 +38,10 @@ public sealed class DemoMigrationRunner : IMigrationRunner, IDisposable
     public event EventHandler<IMigrationJob>? JobAdded;
     public event EventHandler<IMigrationJob>? JobFinished;
 
-    public IMigrationJob Enqueue(MigrationJobDefinition definition) => Enqueue(definition, 0, JobStatus.Queued, 1.0);
+    public IMigrationJob Enqueue(MigrationJobDefinition definition, string sourcePassword, string destinationPassword) =>
+        Enqueue(definition, 0, JobStatus.Queued, 1.0);
+
+    public bool RetryFailed(Guid jobId) => false;
 
     /// <summary>Ajoute une tâche déjà partiellement avancée (jeu de démonstration).</summary>
     public IMigrationJob Enqueue(MigrationJobDefinition definition, double prefill, JobStatus initial, double sizeFactor)

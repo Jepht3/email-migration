@@ -17,7 +17,11 @@ public interface IMigrationRunner
     event EventHandler<IMigrationJob>? JobAdded;
     event EventHandler<IMigrationJob>? JobFinished;
 
-    IMigrationJob Enqueue(MigrationJobDefinition definition);
+    /// <summary>Ajoute une tâche à la file ; les mots de passe sont chiffrés avant d'être stockés.</summary>
+    IMigrationJob Enqueue(MigrationJobDefinition definition, string sourcePassword, string destinationPassword);
+
+    /// <summary>Repasse les messages en échec « en attente » et relance la tâche ; faux si impossible.</summary>
+    bool RetryFailed(Guid jobId);
 }
 
 /// <summary>Poignée sur une tâche en cours ou terminée.</summary>

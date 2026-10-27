@@ -10,6 +10,11 @@ using System.Net.Http;
 using MailMigrator.Core.Abstractions;
 using MailMigrator.Core.Connectivity;
 using MailMigrator.Core.Discovery;
+using MailMigrator.Core.Engine;
+using MailMigrator.Core.Imap;
+using MailMigrator.Core.Models;
+using MailMigrator.Core.Persistence;
+using Microsoft.Extensions.Logging;
 using MailMigrator.Core.Reporting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -52,11 +57,29 @@ public partial class App : Application
                 services.AddSingleton<ConnectionTester>();
                 services.AddSingleton<AccountServices>();
 
-                // Étape 2 : moteur et historique simulés (remplacés aux étapes 3b à 3d).
-                services.AddSingleton<DemoHistory>();
-                services.AddSingleton<IMigrationHistory>(sp => sp.GetRequiredService<DemoHistory>());
-                services.AddSingleton<DemoMigrationRunner>();
-                services.AddSingleton<IMigrationRunner>(sp => sp.GetRequiredService<DemoMigrationRunner>());
+                services.AddSingleton<IMailboxConnectionFactory, MailKitConnectionFactory>();
+                services.AddSingleton<ToastService>();
+                if (IsDemo)
+                {
+                    // Démonstration (--demo, --screenshots) : 5 migrations simulées, historique fictif.
+                    services.AddSingleton<DemoHistory>();
+                    services.AddSingleton<IMigrationHistory>(sp => sp.GetRequiredService<DemoHistory>());
+                    services.AddSingleton<DemoMigrationRunner>();
+                    services.AddSingleton<IMigrationRunner>(sp => sp.GetRequiredService<DemoMigrationRunner>());
+                }
+                else
+                {
+                    // Moteur réel : état et historique dans SQLite, mots de passe chiffrés DPAPI.
+                    services.AddSingleton(_ => new SqliteMigrationStore(Path.Combine(DataFolder, "migrations.db")));
+                    services.AddSingleton<IMigrationStore>(sp => sp.GetRequiredService<SqliteMigrationStore>());
+                    services.AddSingleton<IMigrationHistory>(sp => sp.GetRequiredService<SqliteMigrationStore>());
+                    services.AddSingleton<ISecretProtector, DpapiSecretProtector>();
+                    services.AddSingleton(sp => new MigrationService(
+                        sp.GetRequiredService<IMigrationStore>(), sp.GetRequiredService<IMailboxConnectionFactory>(),
+                        sp.GetRequiredService<ISecretProtector>(), logger: sp.GetRequiredService<ILogger<MigrationEngine>>()));
+                    services.AddSingleton<MigrationScheduler>();
+                    services.AddSingleton<IMigrationRunner>(sp => sp.GetRequiredService<MigrationScheduler>());
+                }
 
                 services.AddSingleton<HomeViewModel>();
                 services.AddSingleton<NewMigrationViewModel>();
@@ -78,7 +101,14 @@ public partial class App : Application
 
         var services = _host.Services;
         services.GetRequiredService<ThemeService>().Initialize();
-        services.GetRequiredService<DemoMigrationRunner>().SeedDemo();
+        var runner = services.GetRequiredService<IMigrationRunner>();
+        runner.JobFinished += (_, job) => Dispatcher.BeginInvoke(() => OnJobFinished(job));
+        if (IsDemo) services.GetRequiredService<DemoMigrationRunner>().SeedDemo();
+        else
+        {
+            var resumed = services.GetRequiredService<MigrationScheduler>().ResumePending();
+            if (resumed > 0) Log.Information("{Count} migration(s) interrompue(s) remise(s) en file", resumed);
+        }
 
         var shell = services.GetRequiredService<ShellWindow>();
         MainWindow = shell;
@@ -91,6 +121,26 @@ public partial class App : Application
             await new ScreenshotTour(services, shell).RunAsync(folder);
             Shutdown();
         }
+    }
+
+    /// <summary>Vrai en mode démonstration : données fictives, aucun accès aux boîtes.</summary>
+    public static bool IsDemo { get; } = Environment.GetCommandLineArgs().Any(a => a is "--demo" or "--screenshots");
+
+    /// <summary>Fin d'une tâche : notification Windows (même app réduite) et rafraîchissement des écrans.</summary>
+    private void OnJobFinished(IMigrationJob job)
+    {
+        var services = _host!.Services;
+        services.GetRequiredService<HomeViewModel>().Refresh();
+        services.GetRequiredService<HistoryViewModel>().Refresh();
+        var s = job.GetSnapshot();
+        var (title, text) = s.Status switch
+        {
+            JobStatus.Completed => ("Migration terminée", $"{job.Definition.SourceEmail} → {job.Definition.DestinationEmail} : {s.Copied:N0} emails copiés, {s.Skipped:N0} déjà présents."),
+            JobStatus.CompletedWithErrors => ("Migration terminée avec des erreurs", $"{job.Definition.SourceEmail} : {s.Copied:N0} copiés, {s.Failed:N0} en échec. Ouvrez le rapport pour réessayer."),
+            JobStatus.Failed => ("La migration a échoué", $"{job.Definition.SourceEmail} : {s.LastError ?? "voir le détail dans l'application."}"),
+            _ => ("Migration annulée", $"{job.Definition.SourceEmail} → {job.Definition.DestinationEmail}"),
+        };
+        services.GetRequiredService<ToastService>().Show(title, text, job.Definition.Id);
     }
 
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -106,6 +156,8 @@ public partial class App : Application
     {
         if (_host is not null)
         {
+            // Interrompt proprement les migrations : elles reprendront au prochain lancement.
+            if (_host.Services.GetService<MigrationScheduler>() is { } scheduler) await scheduler.DisposeAsync();
             await _host.StopAsync();
             _host.Dispose();
         }

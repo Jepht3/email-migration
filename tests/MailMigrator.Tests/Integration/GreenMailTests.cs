@@ -1,4 +1,5 @@
 using MailKit;
+using MailMigrator.Core.Abstractions;
 using MailMigrator.Core.Connectivity;
 using MailMigrator.Core.Engine;
 using MailMigrator.Core.Imap;
@@ -174,6 +175,46 @@ public sealed class GreenMailTests(ITestOutputHelper output) : IAsyncLifetime
         var after = await ImapTestKit.InventoryAsync(Destination, "destination");
         Assert.Equal(JobStatus.Completed, rerun);
         Assert.Equal(dest.Sum(f => f.Value.Count), after.Sum(f => f.Value.Count));
+    }
+
+    [Fact]
+    public async Task Scheduler_runs_queued_jobs_and_resumes_pending_ones_after_restart()
+    {
+        if (!Enabled) return;
+        await SeedTypicalMailbox();
+        var definition = new MigrationJobDefinition
+        {
+            SourceEmail = Source.UserName,
+            Source = Source,
+            DestinationEmail = Destination.UserName,
+            Destination = Destination,
+        };
+
+        // 1re « session » : la tâche démarre puis l'application se ferme en pleine copie.
+        using (var store = new SqliteMigrationStore(_db))
+        {
+            var scheduler = new MigrationScheduler(new MigrationService(store, new MailKitConnectionFactory(), new FakeProtector()));
+            var job = scheduler.Enqueue(definition, "source", "destination");
+            while (job.GetSnapshot().Copied < 10) await Task.Delay(20);
+            await scheduler.DisposeAsync();
+            Assert.Equal(JobStatus.Queued, store.GetJob(definition.Id)!.Status);
+        }
+
+        // 2e session : la tâche est reprise automatiquement et se termine.
+        using (var store = new SqliteMigrationStore(_db))
+        {
+            var scheduler = new MigrationScheduler(new MigrationService(store, new MailKitConnectionFactory(), new FakeProtector()));
+            var finished = new TaskCompletionSource<IMigrationJob>();
+            scheduler.JobFinished += (_, j) => finished.TrySetResult(j);
+
+            Assert.Equal(1, scheduler.ResumePending());
+            var job = await finished.Task.WaitAsync(TimeSpan.FromSeconds(60));
+
+            Assert.Equal(JobStatus.Completed, job.GetSnapshot().Status);
+            var dest = await ImapTestKit.InventoryAsync(Destination, "destination");
+            Assert.Equal(40, dest.Sum(f => f.Value.Count));
+            await scheduler.DisposeAsync();
+        }
     }
 
     [Fact]

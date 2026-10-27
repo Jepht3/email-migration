@@ -35,7 +35,14 @@ public sealed class SqliteMigrationStoreTests : IDisposable
 
         using var reopened = new SqliteMigrationStore(_path);
         var job = reopened.GetJob(Job.Id)!;
-        Assert.Equal(Job, job.Definition with { Options = job.Definition.Options with { ExcludedFolders = Job.Options.ExcludedFolders, FolderOverrides = Job.Options.FolderOverrides } });
+        // Les listes sont désérialisées dans de nouvelles instances : on compare le reste par valeur.
+        var options = job.Definition.Options with
+        {
+            ExcludedFolders = Job.Options.ExcludedFolders,
+            SkippedSourceFolders = Job.Options.SkippedSourceFolders,
+            FolderOverrides = Job.Options.FolderOverrides,
+        };
+        Assert.Equal(Job, job.Definition with { Options = options });
         Assert.Equal(["Archives"], job.Definition.Options.ExcludedFolders);
         Assert.Equal(JobStatus.Copying, job.Status);
         Assert.NotNull(job.StartedAt);

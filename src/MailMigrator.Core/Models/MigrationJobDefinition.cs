@@ -23,6 +23,9 @@ public sealed record MigrationOptions
     public bool VerifyAfterCopy { get; init; } = true;
     public bool ErasePasswordsWhenDone { get; init; } = true;
 
+    /// <summary>Dossiers source décochés dans l'aperçu (chemins exacts, côté serveur source).</summary>
+    public IReadOnlyList<string> SkippedSourceFolders { get; init; } = [];
+
     /// <summary>Correspondances forcées par l'utilisateur : chemin source → chemin destination.</summary>
     public IReadOnlyDictionary<string, string> FolderOverrides { get; init; } = new Dictionary<string, string>();
 }
