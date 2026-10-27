@@ -57,7 +57,9 @@ public partial class App : Application
                 services.AddSingleton<ConnectionTester>();
                 services.AddSingleton<AccountServices>();
 
-                services.AddSingleton<IMailboxConnectionFactory, MailKitConnectionFactory>();
+                // Boîtes IMAP ou sauvegardes sur ce PC (mots de passe et clés de sauvegarde protégés par DPAPI).
+                services.AddSingleton<ISecretProtector, DpapiSecretProtector>();
+                services.AddSingleton<IMailboxConnectionFactory, MailboxConnectionFactory>();
                 services.AddSingleton<ToastService>();
                 if (IsDemo)
                 {
@@ -73,7 +75,6 @@ public partial class App : Application
                     services.AddSingleton(_ => new SqliteMigrationStore(Path.Combine(DataFolder, "migrations.db")));
                     services.AddSingleton<IMigrationStore>(sp => sp.GetRequiredService<SqliteMigrationStore>());
                     services.AddSingleton<IMigrationHistory>(sp => sp.GetRequiredService<SqliteMigrationStore>());
-                    services.AddSingleton<ISecretProtector, DpapiSecretProtector>();
                     services.AddSingleton(sp => new MigrationService(
                         sp.GetRequiredService<IMigrationStore>(), sp.GetRequiredService<IMailboxConnectionFactory>(),
                         sp.GetRequiredService<ISecretProtector>(), logger: sp.GetRequiredService<ILogger<MigrationEngine>>()));
@@ -87,6 +88,7 @@ public partial class App : Application
                 services.AddSingleton<ReportViewModel>();
                 services.AddSingleton<HistoryViewModel>();
                 services.AddSingleton<SettingsViewModel>();
+                services.AddSingleton<BackupsViewModel>();
 
                 services.AddSingleton<HomePage>();
                 services.AddSingleton<NewMigrationPage>();
@@ -94,6 +96,7 @@ public partial class App : Application
                 services.AddSingleton<ReportPage>();
                 services.AddSingleton<HistoryPage>();
                 services.AddSingleton<SettingsPage>();
+                services.AddSingleton<BackupsPage>();
                 services.AddSingleton<ShellWindow>();
             })
             .Build();

@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.IO;
 using MailMigrator.App.Services;
+using MailMigrator.Core.Archive;
 using MailMigrator.Core.Connectivity;
 using MailMigrator.Core.Discovery;
 using MailMigrator.Core.Models;
@@ -14,6 +16,13 @@ public enum DetectionState
     Detecting,
     Detected,
     Failed,
+}
+
+/// <summary>Un côté d'une migration : une boîte email (IMAP) ou une sauvegarde sur ce PC.</summary>
+public enum MailboxKind
+{
+    Mailbox,
+    LocalArchive,
 }
 
 public enum TestState
@@ -34,7 +43,11 @@ public sealed partial class AccountPairViewModel : ObservableObject
     {
         ColorIndex = colorIndex;
         Source = new AccountSideViewModel("Source", services);
-        Destination = new AccountSideViewModel("Destination", services);
+        Destination = new AccountSideViewModel("Destination", services) { SuggestArchiveName = () => Source.Email.Trim() };
+        Source.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AccountSideViewModel.Email)) Destination.SuggestPath();
+        };
         RemoveCommand = new RelayCommand(() => remove(this));
     }
 
@@ -92,7 +105,126 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     public bool IsTestOk => Test == TestState.Success;
     public bool IsTestFailed => Test == TestState.Failure;
     public bool IsUnencrypted => Security == SecurityMode.None;
-    public bool IsComplete => Email.Contains('@') && Password.Length > 0;
+    public bool IsComplete => IsLocalArchive ? LocalPath.Trim().Length > 0 : Email.Contains('@') && Password.Length > 0;
+
+    // ---------- Boîte email ou sauvegarde sur ce PC ----------
+
+    public static string DefaultBackupRoot { get; } =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "LEWEBMAX", "Sauvegardes");
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMailbox), nameof(IsLocalArchive), nameof(ArchiveStatus), nameof(ArchiveStatusIsError))]
+    private MailboxKind _kind;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ArchiveStatus), nameof(ArchiveStatusIsError))]
+    private string _localPath = "";
+
+    [ObservableProperty] private bool _encryptArchive = true;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ArchiveStatus), nameof(ArchiveStatusIsError), nameof(CanChooseFormat))]
+    private LocalArchiveSummary? _archiveSummary;
+
+    public bool IsMailbox => Kind == MailboxKind.Mailbox;
+    public bool IsLocalArchive => Kind == MailboxKind.LocalArchive;
+    public bool IsDestination => Role == "Destination";
+    public string ArchiveKindLabel => IsDestination ? "Sauvegarde sur ce PC" : "Sauvegarde de ce PC";
+
+    /// <summary>Le format ne se choisit qu'à la création d'une nouvelle sauvegarde.</summary>
+    public bool CanChooseFormat => IsDestination && ArchiveSummary is null;
+
+    /// <summary>Nom proposé pour le dossier d'une nouvelle sauvegarde (l'adresse source).</summary>
+    public Func<string>? SuggestArchiveName { get; set; }
+
+    public string ArchiveStatus => LocalPath.Trim().Length == 0
+        ? (IsDestination ? "Choisissez le dossier où enregistrer la sauvegarde." : "Choisissez le dossier d'une sauvegarde existante.")
+        : ArchiveSummary is { } s
+            ? $"Sauvegarde de {s.Label} : {Core.Formatting.Format.Number(s.Messages)} emails, {Core.Formatting.Format.Bytes(s.Bytes)}, "
+              + $"{(s.Encrypted ? "chiffrée" : "format lisible")}, mise à jour le {s.UpdatedAt.LocalDateTime:dd/MM/yyyy à HH:mm}."
+              + (IsDestination ? " Seuls les nouveaux emails seront ajoutés." : "")
+            : IsDestination ? "Une nouvelle sauvegarde sera créée dans ce dossier." : "Aucune sauvegarde trouvée dans ce dossier.";
+
+    public bool ArchiveStatusIsError => IsLocalArchive && !IsDestination && LocalPath.Trim().Length > 0 && ArchiveSummary is null;
+
+    /// <summary>Adresse affichée sur la carte de migration et dans l'historique.</summary>
+    public string DisplayEmail => IsLocalArchive
+        ? (IsDestination ? "Sauvegarde sur ce PC" : $"Sauvegarde · {ArchiveSummary?.Label}")
+        : Email.Trim();
+
+    /// <summary>Ce qui sera chiffré et stocké pour la migration (rien pour une sauvegarde locale).</summary>
+    public string? Secret => IsLocalArchive ? "" : Password.Length > 0 ? Password : null;
+
+    public IAuthProvider CreateAuth() => new PasswordAuthProvider(Secret ?? "");
+
+    private bool _autoPath;
+    private bool _settingAutoPath;
+
+    partial void OnKindChanged(MailboxKind value)
+    {
+        Test = TestState.NotTested;
+        if (value == MailboxKind.LocalArchive && LocalPath.Length == 0 && IsDestination) SuggestPath();
+        RefreshArchive();
+    }
+
+    /// <summary>Dossier proposé : Documents\LEWEBMAX\Sauvegardes\&lt;adresse source&gt;, tant que l'utilisateur ne l'a pas changé.</summary>
+    public void SuggestPath()
+    {
+        if (!IsLocalArchive || !IsDestination || (LocalPath.Length > 0 && !_autoPath)) return;
+        _settingAutoPath = true;
+        LocalPath = Path.Combine(DefaultBackupRoot, SafeName(SuggestArchiveName?.Invoke() is { Length: > 0 } name ? name : "boite"));
+        _settingAutoPath = false;
+        _autoPath = true;
+    }
+
+    partial void OnLocalPathChanged(string value)
+    {
+        if (!_settingAutoPath) _autoPath = false;
+        RefreshArchive();
+    }
+
+    private void RefreshArchive()
+    {
+        try
+        {
+            ArchiveSummary = IsLocalArchive && LocalPath.Trim().Length > 0 ? LocalArchiveMailbox.ReadSummary(LocalPath.Trim()) : null;
+        }
+        catch (Exception)
+        {
+            ArchiveSummary = null;
+        }
+        OnPropertyChanged(nameof(ArchiveStatus));
+        OnPropertyChanged(nameof(ArchiveStatusIsError));
+    }
+
+    [RelayCommand]
+    private void BrowseArchive()
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = IsDestination ? "Dossier de la sauvegarde" : "Dossier d'une sauvegarde existante",
+            InitialDirectory = Directory.Exists(LocalPath) ? LocalPath : Directory.Exists(DefaultBackupRoot) ? DefaultBackupRoot : null,
+        };
+        if (dialog.ShowDialog() == true) LocalPath = dialog.FolderName;
+    }
+
+    /// <summary>Prérenseigne une boîte email déjà connue (écran Sauvegardes locales), sans relancer la détection.</summary>
+    public void SetMailbox(string email, ImapEndpoint? endpoint)
+    {
+        Kind = MailboxKind.Mailbox;
+        _suppressDetection = endpoint is not null;
+        Email = email;
+        _suppressDetection = false;
+        if (endpoint is not null) Apply(endpoint, ProviderCatalog.FromHost(endpoint.Host), "dernière sauvegarde");
+    }
+
+    public void SetArchive(string path)
+    {
+        Kind = MailboxKind.LocalArchive;
+        LocalPath = path;
+    }
+
+    private static string SafeName(string name) => string.Join("_", name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)).Trim();
 
     public IReadOnlyList<SecurityOption> SecurityOptions { get; } =
     [
@@ -102,7 +234,9 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     ];
 
     /// <summary>Paramètres effectifs, y compris les corrections manuelles.</summary>
-    public ImapEndpoint? Endpoint => string.IsNullOrWhiteSpace(Host) || !int.TryParse(Port, out var port) || port is <= 0 or > 65535
+    public ImapEndpoint? Endpoint => IsLocalArchive
+        ? (LocalPath.Trim().Length == 0 ? null : ImapEndpoint.LocalArchive(LocalPath.Trim(), ArchiveSummary?.Label ?? "", EncryptArchive))
+        : string.IsNullOrWhiteSpace(Host) || !int.TryParse(Port, out var port) || port is <= 0 or > 65535
         ? null
         : new ImapEndpoint(Host.Trim(), port, Security, string.IsNullOrWhiteSpace(UserName) ? Email.Trim() : UserName.Trim());
 

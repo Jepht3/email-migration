@@ -12,7 +12,51 @@
         <!-- Un côté d'une paire (source ou destination) -->
         <DataTemplate x:Key="AccountSide" DataType="{x:Type vm:AccountSideViewModel}">
             <StackPanel>
-                <TextBlock Margin="0,0,0,8" Style="{StaticResource Text.Overline}" Text="{Binding Role}" />
+                <Grid Margin="0,0,0,8">
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Overline}" Text="{Binding Role}" />
+                    <!-- Boîte email (migration directe) ou sauvegarde sur ce PC -->
+                    <Border HorizontalAlignment="Right" Padding="2" CornerRadius="8" Background="{DynamicResource Brush.SurfaceSubtle}">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource Segment}" Content="Boîte email"
+                                         IsChecked="{Binding Kind, Converter={StaticResource EqualsTo}, ConverterParameter=Mailbox}"
+                                         ToolTip="Migration directe vers ou depuis une boîte email" />
+                            <RadioButton Style="{StaticResource Segment}" Content="{Binding ArchiveKindLabel}"
+                                         IsChecked="{Binding Kind, Converter={StaticResource EqualsTo}, ConverterParameter=LocalArchive}"
+                                         ToolTip="Stocker les emails sur ce PC puis les restaurer plus tard vers une autre boîte" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Sauvegarde sur ce PC -->
+                <StackPanel Visibility="{Binding IsLocalArchive, Converter={StaticResource BoolToVisibility}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBox PlaceholderText="Dossier de la sauvegarde" Icon="{ui:SymbolIcon Archive24}"
+                                    Text="{Binding LocalPath, UpdateSourceTrigger=PropertyChanged, Delay=300}" AutomationProperties.Name="Dossier de la sauvegarde" />
+                        <ui:Button Grid.Column="1" Margin="8,0,0,0" Appearance="Secondary" Command="{Binding BrowseArchiveCommand}"
+                                   Icon="{ui:SymbolIcon FolderOpen24}" Content="Parcourir…" />
+                    </Grid>
+                    <Border Margin="0,8,0,0" Padding="10,8" CornerRadius="8" Background="{DynamicResource Brush.Status.InfoSoft}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon x:Name="ArchiveIcon" Symbol="Info24" FontSize="16" VerticalAlignment="Top" Foreground="{DynamicResource Brush.Status.Info}" />
+                            <TextBlock Margin="8,0,0,0" MaxWidth="460" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Text.Primary}"
+                                       TextWrapping="Wrap" Text="{Binding ArchiveStatus}" />
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Status.Error}" TextWrapping="Wrap"
+                               Visibility="{Binding ArchiveStatusIsError, Converter={StaticResource BoolToVisibility}}"
+                               Text="Choisissez le dossier qui contient le fichier archive.db d'une sauvegarde." />
+                    <c:OptionToggle Margin="0,2,0,0" Symbol="LockClosed24" Title="Chiffrer la sauvegarde (recommandé)"
+                                    Description="Seule votre session Windows sur ce PC pourra la lire. Désactivé : fichiers .eml lisibles dans Outlook ou Thunderbird, mais par toute personne ayant accès au disque."
+                                    IsChecked="{Binding EncryptArchive, Mode=TwoWay}"
+                                    Visibility="{Binding CanChooseFormat, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+
+                <!-- Boîte email -->
+                <StackPanel Visibility="{Binding IsMailbox, Converter={StaticResource BoolToVisibility}}">
                 <ui:TextBox PlaceholderText="adresse@domaine.fr" Icon="{ui:SymbolIcon Mail24}"
                             Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"
                             AutomationProperties.Name="{Binding Role, StringFormat='Adresse email {0}'}" />
@@ -121,8 +165,10 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
+                </StackPanel>
             </StackPanel>
         </DataTemplate>
+
     </Page.Resources>
 
     <Grid Margin="{StaticResource Space.PagePadding}">

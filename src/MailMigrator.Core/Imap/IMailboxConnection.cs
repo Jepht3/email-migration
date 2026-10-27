@@ -71,7 +71,38 @@ public interface IMailboxConnection : IAsyncDisposable
 
     /// <summary>Vrai si un message portant ce Message-ID existe déjà dans le dossier.</summary>
     Task<bool> ContainsMessageIdAsync(string path, string messageId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Télécharge plusieurs petits messages en une seule commande (un aller-retour réseau au lieu d'un
+    /// par message). Les messages introuvables sont absents du résultat. Par défaut : un par un.
+    /// </summary>
+    async Task<IReadOnlyDictionary<uint, Stream>> DownloadBatchAsync(string path, IReadOnlyList<(uint Uid, long Size)> messages, CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<uint, Stream>();
+        foreach (var (uid, size) in messages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            result[uid] = await DownloadAsync(path, uid, size, cancellationToken);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Dépose plusieurs messages en une seule commande (MULTIAPPEND quand le serveur le permet,
+    /// tout ou rien). Par défaut : un par un.
+    /// </summary>
+    async Task AppendBatchAsync(string path, IReadOnlyList<AppendItem> items, CancellationToken cancellationToken)
+    {
+        foreach (var item in items)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await AppendAsync(path, item.Content, item.Flags, item.InternalDate, cancellationToken);
+        }
+    }
 }
+
+/// <summary>Un message à déposer, avec ses drapeaux et sa date de réception.</summary>
+public sealed record AppendItem(Stream Content, MailFlags Flags, DateTimeOffset InternalDate);
 
 /// <summary>Destination capable de vérifier la place disponible avant une copie (sauvegarde locale).</summary>
 public interface ICapacityAware

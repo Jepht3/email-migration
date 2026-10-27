@@ -174,60 +174,196 @@ public sealed class MigrationEngine(IMigrationStore store, IMailboxConnectionFac
 
     // ------------------------------------------------------------------ Copie
 
+    /// <summary>Lot : au plus 50 messages et 8 Mo ; un message de plus de 4 Mo voyage seul (par morceaux).</summary>
+    private const int BatchMaxMessages = 50;
+    private const long BatchMaxBytes = 8 * 1024 * 1024;
+    private const long LargeMessage = 4 * 1024 * 1024;
+
+    private sealed record Downloaded(IReadOnlyList<StoredMessage> Messages, IReadOnlyDictionary<uint, Stream> Streams, Exception? Error) : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync()
+        {
+            foreach (var stream in Streams.Values) await stream.DisposeAsync();
+        }
+    }
+
+    private static RemoteMessageInfo Info(StoredMessage m) => new(m.Date ?? m.InternalDate, m.Sender, m.Subject, m.Size);
+
+    /// <summary>
+    /// Copie d'un dossier par lots, en flux tendu : pendant que le lot N est déposé dans la destination,
+    /// le lot N+1 est déjà en cours de téléchargement depuis la source (connexions distinctes).
+    /// Une commande réseau par lot au lieu de deux ou trois par message.
+    /// </summary>
     private async Task CopyFolderAsync(Guid jobId, PlannedFolder planned, IMailboxConnection source, IMailboxConnection destination,
         JobProgress progress, PauseController pause, CancellationToken ct)
     {
         var folder = planned.Folder;
         var keys = store.GetDestinationKeys(jobId, folder.DestinationPath);
         progress.SetCurrentFolder(planned.ProgressIndex);
-        var processed = 0;
 
+        // 1. Déjà présents dans la destination (ou en double dans la source) : rien à transférer.
+        var toCopy = new List<StoredMessage>();
+        var planned_ = new HashSet<string>(StringComparer.Ordinal);
+        var skipped = new List<long>();
         foreach (var message in store.GetMessages(folder.Id, MessageStatus.Pending))
         {
-            if (pause.IsPaused)
+            if (keys.Contains(message.Key) || !planned_.Add(message.Key))
             {
-                SetStatus(jobId, progress, JobStatus.Paused);
+                skipped.Add(message.Id);
+                progress.Record(planned.ProgressIndex, Progress.ActivityKind.Skipped, Info(message), "Déjà présent dans la destination");
+            }
+            else toCopy.Add(message);
+        }
+        if (skipped.Count > 0) store.SetMessagesStatus(skipped, MessageStatus.Skipped, "Déjà présent dans la destination");
+
+        // 2. Découpage en lots.
+        var batches = new List<List<StoredMessage>>();
+        foreach (var message in toCopy)
+        {
+            var last = batches.LastOrDefault();
+            if (message.Size > LargeMessage || last is null || last.Count >= BatchMaxMessages
+                || last[0].Size > LargeMessage || last.Sum(m => m.Size) + message.Size > BatchMaxBytes)
+                batches.Add([message]);
+            else last.Add(message);
+        }
+
+        // 3. Téléchargement du lot suivant pendant le dépôt du lot courant.
+        Task<Downloaded>? next = batches.Count > 0 ? DownloadAsync(batches[0]) : null;
+        try
+        {
+            for (var i = 0; i < batches.Count; i++)
+            {
+                await using var current = await next!;
+                next = null;
+                if (pause.IsPaused)
+                {
+                    SetStatus(jobId, progress, JobStatus.Paused);
+                    store.SaveElapsed(jobId, progress.Elapsed);
+                    await pause.WaitIfPausedAsync(ct);
+                    SetStatus(jobId, progress, JobStatus.Copying);
+                }
+                ct.ThrowIfCancellationRequested();
+                if (i + 1 < batches.Count) next = DownloadAsync(batches[i + 1]);
+
+                await AppendAsync(current);
                 store.SaveElapsed(jobId, progress.Elapsed);
-                await pause.WaitIfPausedAsync(ct);
-                SetStatus(jobId, progress, JobStatus.Copying);
             }
-            ct.ThrowIfCancellationRequested();
-
-            var info = new RemoteMessageInfo(message.Date ?? message.InternalDate, message.Sender, message.Subject, message.Size);
-            if (keys.Contains(message.Key))
+        }
+        finally
+        {
+            // Interruption : le lot déjà lancé est attendu puis libéré (pas de tâche orpheline).
+            if (next is not null)
             {
-                store.SetMessageStatus(message.Id, MessageStatus.Skipped, "Déjà présent dans la destination");
-                progress.Record(planned.ProgressIndex, Progress.ActivityKind.Skipped, info, "Déjà présent dans la destination");
-                continue;
+                try { await using var _ = await next; } catch { /* sans importance à l'arrêt */ }
             }
+        }
 
+        async Task<Downloaded> DownloadAsync(List<StoredMessage> batch)
+        {
             try
             {
-                var appendAttempted = false;
+                var streams = batch is [{ Size: > LargeMessage } single]
+                    ? new Dictionary<uint, Stream>
+                    {
+                        [single.Uid] = await _retry.ExecuteAsync(c => source.DownloadAsync(folder.SourcePath, single.Uid, single.Size, c), Reconnect(progress, source), ct),
+                    }
+                    : await _retry.ExecuteAsync(c => source.DownloadBatchAsync(folder.SourcePath, batch.Select(m => (m.Uid, m.Size)).ToList(), c), Reconnect(progress, source), ct);
+                return new Downloaded(batch, streams, null);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException && !RetryPolicy.IsTransient(ex))
+            {
+                return new Downloaded(batch, new Dictionary<uint, Stream>(), ex);
+            }
+        }
+
+        async Task AppendAsync(Downloaded downloaded)
+        {
+            var available = downloaded.Messages.Where(m => downloaded.Streams.ContainsKey(m.Uid)).ToList();
+            if (downloaded.Error is not null)
+            {
+                // Le lot n'a pas pu être téléchargé d'un bloc : on isole le message en cause.
+                foreach (var message in downloaded.Messages) await CopyOneAsync(message, null, retried: false);
+                return;
+            }
+            foreach (var missing in downloaded.Messages.Except(available))
+                Fail(missing, "Message introuvable sur la source (supprimé pendant la migration ?)");
+            if (available.Count == 0) return;
+
+            var attempt = 0;
+            try
+            {
+                await _retry.ExecuteAsync(async c =>
+                {
+                    var items = available;
+                    if (attempt++ > 0)
+                    {
+                        // Coupure pendant le dépôt : on ne redépose pas ce qui est déjà arrivé.
+                        items = [];
+                        foreach (var m in available)
+                            if (m.MessageId is not { } mid || !await destination.ContainsMessageIdAsync(folder.DestinationPath, mid, c)) items.Add(m);
+                    }
+                    foreach (var m in items) downloaded.Streams[m.Uid].Position = 0;
+                    await destination.AppendBatchAsync(folder.DestinationPath,
+                        items.Select(m => new AppendItem(downloaded.Streams[m.Uid], m.Flags, m.InternalDate)).ToList(), c);
+                }, Reconnect(progress, destination), ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException && !RetryPolicy.IsTransient(ex))
+            {
+                // Lot refusé (message trop gros, MIME invalide…) : un par un pour isoler le fautif.
+                _log.LogInformation("Lot refusé dans {Folder} ({Reason}) : dépôt message par message", folder.DestinationPath, ex.Message);
+                foreach (var message in available) await CopyOneAsync(message, downloaded.Streams[message.Uid], retried: true);
+                return;
+            }
+
+            store.SetMessagesStatus(available.Select(m => m.Id), MessageStatus.Copied);
+            store.AddDestinationKeys(jobId, folder.DestinationPath, available.Select(m => m.Key));
+            foreach (var m in available)
+            {
+                keys.Add(m.Key);
+                progress.Record(planned.ProgressIndex, Progress.ActivityKind.Copied, Info(m));
+            }
+        }
+
+        // Copie d'un seul message (repli après un lot refusé ou illisible).
+        async Task CopyOneAsync(StoredMessage message, Stream? content, bool retried)
+        {
+            try
+            {
+                var appendAttempted = retried;
                 await _retry.ExecuteAsync(async c =>
                 {
                     // L'APPEND a peut-être abouti juste avant la coupure : on vérifie avant de recopier.
                     if (appendAttempted && message.MessageId is { } mid && await destination.ContainsMessageIdAsync(folder.DestinationPath, mid, c))
                         return;
-                    await using var content = await source.DownloadAsync(folder.SourcePath, message.Uid, message.Size, c);
-                    appendAttempted = true;
-                    await destination.AppendAsync(folder.DestinationPath, content, message.Flags, message.InternalDate, c);
+                    var stream = content ?? await source.DownloadAsync(folder.SourcePath, message.Uid, message.Size, c);
+                    try
+                    {
+                        stream.Position = 0;
+                        appendAttempted = true;
+                        await destination.AppendAsync(folder.DestinationPath, stream, message.Flags, message.InternalDate, c);
+                    }
+                    finally
+                    {
+                        if (content is null) await stream.DisposeAsync();
+                    }
                 }, Reconnect(progress, source, destination), ct);
 
                 store.SetMessageStatus(message.Id, MessageStatus.Copied);
                 store.AddDestinationKey(jobId, folder.DestinationPath, message.Key);
                 keys.Add(message.Key);
-                progress.Record(planned.ProgressIndex, Progress.ActivityKind.Copied, info);
+                progress.Record(planned.ProgressIndex, Progress.ActivityKind.Copied, Info(message));
             }
             catch (Exception ex) when (ex is not OperationCanceledException && !RetryPolicy.IsTransient(ex))
             {
-                var reason = Describe(ex);
-                _log.LogWarning("Message {Uid} de {Folder} en échec : {Reason}", message.Uid, folder.SourcePath, reason);
-                store.SetMessageStatus(message.Id, MessageStatus.Failed, reason);
-                progress.Record(planned.ProgressIndex, Progress.ActivityKind.Failed, info, reason);
+                Fail(message, Describe(ex));
             }
+        }
 
-            if (++processed % 50 == 0) store.SaveElapsed(jobId, progress.Elapsed);
+        void Fail(StoredMessage message, string reason)
+        {
+            _log.LogWarning("Message {Uid} de {Folder} en échec : {Reason}", message.Uid, folder.SourcePath, reason);
+            store.SetMessageStatus(message.Id, MessageStatus.Failed, reason);
+            progress.Record(planned.ProgressIndex, Progress.ActivityKind.Failed, Info(message), reason);
         }
     }
 

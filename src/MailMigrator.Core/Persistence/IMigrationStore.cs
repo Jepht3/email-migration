@@ -65,6 +65,9 @@ public interface IMigrationStore : IMigrationHistory
     int AddMessages(long folderId, IEnumerable<(RemoteMessage Message, string Key)> messages);
     IReadOnlyList<StoredMessage> GetMessages(long folderId, MessageStatus? status = null);
     void SetMessageStatus(long messageId, MessageStatus status, string? error = null);
+
+    /// <summary>Même statut pour tout un lot, en une transaction.</summary>
+    void SetMessagesStatus(IEnumerable<long> messageIds, MessageStatus status, string? error = null);
     FolderTotals GetTotals(long folderId);
 
     /// <summary>« Réessayer les échecs » : repasse les échecs en attente.</summary>
@@ -73,4 +76,5 @@ public interface IMigrationStore : IMigrationHistory
     HashSet<string> GetDestinationKeys(Guid jobId, string destinationPath);
     void ReplaceDestinationKeys(Guid jobId, string destinationPath, IEnumerable<string> keys);
     void AddDestinationKey(Guid jobId, string destinationPath, string key);
+    void AddDestinationKeys(Guid jobId, string destinationPath, IEnumerable<string> keys);
 }

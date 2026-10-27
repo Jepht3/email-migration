@@ -193,7 +193,7 @@ public sealed partial class NewMigrationViewModel : ObservableObject
     }
 
     private IEnumerable<AccountPairViewModel> FilledPairs =>
-        Pairs.Where(p => p.Source.Email.Length > 0 || p.Destination.Email.Length > 0);
+        Pairs.Where(p => p.Source.Email.Length > 0 || p.Destination.Email.Length > 0 || p.Source.IsLocalArchive || p.Destination.IsLocalArchive);
 
     /// <summary>Chaque boîte saisie doit avoir un serveur et un mot de passe ; sinon message précis.</summary>
     private bool ValidatePairs()
@@ -206,9 +206,19 @@ public sealed partial class NewMigrationViewModel : ObservableObject
         }
         foreach (var pair in pairs)
         {
+            if (pair.Source.IsLocalArchive && pair.Destination.IsLocalArchive)
+            {
+                _dialogs.Notify($"Migration {pair.Number}", "Une sauvegarde se restaure vers une boîte email : choisissez « Boîte email » pour la destination.",
+                    ControlAppearance.Caution, SymbolRegular.Warning24);
+                return false;
+            }
             foreach (var side in new[] { pair.Source, pair.Destination })
             {
-                string? problem = !side.Email.Contains('@') ? "adresse email invalide"
+                string? problem = side.IsLocalArchive
+                    ? side.LocalPath.Trim().Length == 0 ? "dossier de sauvegarde non choisi"
+                      : side.ArchiveStatusIsError ? "aucune sauvegarde trouvée dans ce dossier"
+                      : null
+                    : !side.Email.Contains('@') ? "adresse email invalide"
                     : side.Password.Length == 0 ? "mot de passe manquant"
                     : side.IsDetecting ? "détection du serveur en cours, patientez une seconde"
                     : side.Endpoint is null ? "serveur IMAP non renseigné (bouton « Modifier »)"
@@ -227,7 +237,7 @@ public sealed partial class NewMigrationViewModel : ObservableObject
     {
         var pair = FilledPairs.FirstOrDefault();
         if (pair?.Source.Endpoint is not { } source || pair.Destination.Endpoint is not { } destination) return;
-        var key = $"{source}|{destination}|{pair.Source.Password.GetHashCode()}|{pair.Destination.Password.GetHashCode()}";
+        var key = $"{source}|{destination}|{pair.Source.Secret?.GetHashCode()}|{pair.Destination.Secret?.GetHashCode()}";
         if (key == _previewFor && FolderMappings.Count > 0)
         {
             ApplyToggles();
@@ -238,11 +248,11 @@ public sealed partial class NewMigrationViewModel : ObservableObject
         FolderPreviewError = null;
         FolderMappings.Clear();
         DestinationFolders.Clear();
-        FolderPreviewCaption = $"Dossiers de {pair.Source.Email} → {pair.Destination.Email}. Modifiez une destination si besoin ; les dossiers absents seront créés.";
+        FolderPreviewCaption = $"Dossiers de {pair.Source.DisplayEmail} → {pair.Destination.DisplayEmail}. Modifiez une destination si besoin ; les dossiers absents seront créés.";
         try
         {
-            await using var src = _connections.Create(source, new PasswordAuthProvider(pair.Source.Password));
-            await using var dst = _connections.Create(destination, new PasswordAuthProvider(pair.Destination.Password));
+            await using var src = _connections.Create(source, pair.Source.CreateAuth());
+            await using var dst = _connections.Create(destination, pair.Destination.CreateAuth());
             await Task.WhenAll(src.ConnectAsync(default), dst.ConnectAsync(default));
             var srcFolders = await src.ListFoldersAsync(default);
             var dstFolders = await dst.ListFoldersAsync(default);
@@ -283,6 +293,38 @@ public sealed partial class NewMigrationViewModel : ObservableObject
         if (step is null || step.Index > Step) return;
         Step = step.Index;
         UpdateSteps();
+    }
+
+    /// <summary>Écran Sauvegardes locales → « Mettre à jour » : boîte d'origine → même sauvegarde.</summary>
+    public void PrepareBackupUpdate(string email, ImapEndpoint? server, string archivePath)
+    {
+        ResetWizard();
+        Pairs[0].Source.SetMailbox(email, server);
+        Pairs[0].Destination.SetArchive(archivePath);
+    }
+
+    /// <summary>Écran Sauvegardes locales → « Nouvelle sauvegarde » : boîte à saisir → ce PC.</summary>
+    public void PrepareNewBackup()
+    {
+        ResetWizard();
+        Pairs[0].Destination.Kind = MailboxKind.LocalArchive;
+    }
+
+    /// <summary>Écran Sauvegardes locales → « Restaurer » : sauvegarde → boîte à saisir.</summary>
+    public void PrepareRestore(string archivePath)
+    {
+        ResetWizard();
+        Pairs[0].Source.SetArchive(archivePath);
+    }
+
+    private void ResetWizard()
+    {
+        Pairs.Clear();
+        FolderMappings.Clear();
+        DestinationFolders.Clear();
+        _previewFor = null;
+        AddPair();
+        ShowStep(0);
     }
 
     public void ShowStep(int step)
@@ -375,12 +417,15 @@ public sealed partial class NewMigrationViewModel : ObservableObject
             _runner.Enqueue(new MigrationJobDefinition
             {
                 ColorIndex = pair.ColorIndex,
-                SourceEmail = pair.Source.Email.Trim(),
+                SourceEmail = pair.Source.DisplayEmail,
                 Source = pair.Source.Endpoint,
-                DestinationEmail = pair.Destination.Email.Trim(),
-                Destination = pair.Destination.Endpoint,
+                DestinationEmail = pair.Destination.DisplayEmail,
+                // Nouvelle sauvegarde : elle porte le nom de la boîte sauvegardée.
+                Destination = pair.Destination.IsLocalArchive && pair.Destination.ArchiveSummary is null
+                    ? pair.Destination.Endpoint! with { UserName = pair.Source.DisplayEmail }
+                    : pair.Destination.Endpoint,
                 Options = jobOptions,
-            }, pair.Source.Password, pair.Destination.Password);
+            }, pair.Source.Secret!, pair.Destination.Secret!);
         }
 
         // Les mots de passe ne restent pas dans l'assistant : seule la copie chiffrée est conservée.

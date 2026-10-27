@@ -266,6 +266,39 @@ public sealed class SqliteMigrationStore : IMigrationStore, IDisposable
         Execute("UPDATE messages SET status = $s, error = $e, processed_at = $now WHERE id = $id;",
             ("$id", messageId), ("$s", (int)status), ("$e", error), ("$now", Now()));
 
+    public void SetMessagesStatus(IEnumerable<long> messageIds, MessageStatus status, string? error = null)
+    {
+        lock (_gate)
+        {
+            using var tx = Begin();
+            using var cmd = Command("UPDATE messages SET status = $s, error = $e, processed_at = $now WHERE id = $id;",
+                ("$s", (int)status), ("$e", error), ("$now", Now()));
+            var id = cmd.Parameters.Add("$id", SqliteType.Integer);
+            foreach (var messageId in messageIds)
+            {
+                id.Value = messageId;
+                cmd.ExecuteNonQuery();
+            }
+            tx.Commit();
+        }
+    }
+
+    public void AddDestinationKeys(Guid jobId, string destinationPath, IEnumerable<string> keys)
+    {
+        lock (_gate)
+        {
+            using var tx = Begin();
+            using var cmd = Command("INSERT OR IGNORE INTO destination_keys VALUES ($job, $p, $k);", ("$job", jobId.ToString()), ("$p", destinationPath));
+            var k = cmd.Parameters.Add("$k", SqliteType.Text);
+            foreach (var key in keys)
+            {
+                k.Value = key;
+                cmd.ExecuteNonQuery();
+            }
+            tx.Commit();
+        }
+    }
+
     public FolderTotals GetTotals(long folderId)
     {
         lock (_gate)

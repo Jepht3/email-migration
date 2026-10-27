@@ -41,6 +41,16 @@ public partial class HistoryPage : Page
     }
 }
 
+public partial class BackupsPage : Page
+{
+    public BackupsPage(BackupsViewModel viewModel)
+    {
+        DataContext = viewModel;
+        InitializeComponent();
+        Loaded += (_, _) => viewModel.Refresh();
+    }
+}
+
 public partial class SettingsPage : Page
 {
     public SettingsPage(SettingsViewModel viewModel)

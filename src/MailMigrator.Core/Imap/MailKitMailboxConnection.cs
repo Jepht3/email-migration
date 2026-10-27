@@ -197,6 +197,38 @@ public sealed class MailKitMailboxConnection(ImapEndpoint endpoint, IAuthProvide
         await folder.AppendAsync(new AppendRequest(mime, ToMessageFlags(flags), internalDate), cancellationToken);
     }
 
+    /// <summary>Un seul FETCH BODY.PEEK[] pour tout le lot.</summary>
+    public async Task<IReadOnlyDictionary<uint, Stream>> DownloadBatchAsync(string path, IReadOnlyList<(uint Uid, long Size)> messages, CancellationToken cancellationToken)
+    {
+        var folder = (ImapFolder)await OpenAsync(path, FolderAccess.ReadOnly, cancellationToken);
+        var result = new Dictionary<uint, Stream>();
+        await folder.GetStreamsAsync(messages.Select(m => new UniqueId(m.Uid)).ToList(), async (_, _, uid, stream, ct) =>
+        {
+            var copy = new MemoryStream();
+            await stream.CopyToAsync(copy, ct);
+            copy.Position = 0;
+            result[uid.Id] = copy;
+        }, cancellationToken);
+        return result;
+    }
+
+    /// <summary>MULTIAPPEND (RFC 3502) si disponible : tout le lot en une commande, atomique.</summary>
+    public async Task AppendBatchAsync(string path, IReadOnlyList<AppendItem> items, CancellationToken cancellationToken)
+    {
+        if (!_folders.TryGetValue(path, out var folder))
+        {
+            folder = await Client.GetFolderAsync(path, cancellationToken);
+            _folders[path] = folder;
+        }
+        var requests = new List<IAppendRequest>(items.Count);
+        foreach (var item in items)
+        {
+            var mime = await MimeMessage.LoadAsync(item.Content, persistent: item.Content is FileStream, cancellationToken);
+            requests.Add(new AppendRequest(mime, ToMessageFlags(item.Flags), item.InternalDate));
+        }
+        await folder.AppendAsync(requests, cancellationToken);
+    }
+
     public async Task<bool> ContainsMessageIdAsync(string path, string messageId, CancellationToken cancellationToken)
     {
         var folder = await OpenAsync(path, FolderAccess.ReadOnly, cancellationToken);

@@ -7,6 +7,7 @@ using MailMigrator.App.Simulation;
 using MailMigrator.App.ViewModels;
 using MailMigrator.App.Views;
 using MailMigrator.App.Views.Pages;
+using MailMigrator.Core.Connectivity;
 using MailMigrator.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -37,6 +38,7 @@ public sealed class ScreenshotTour(IServiceProvider services, ShellWindow shell)
         foreach (var (choice, suffix) in new[] { (ThemeChoice.Light, "clair"), (ThemeChoice.Dark, "sombre") })
         {
             theme.Apply(choice);
+            wizard.SeedDemo();
             await Task.Delay(600);
 
             navigation.Navigate(typeof(HomePage));
@@ -66,6 +68,14 @@ public sealed class ScreenshotTour(IServiceProvider services, ShellWindow shell)
 
             navigation.Navigate(typeof(SettingsPage));
             await Shot(folder, $"10-parametres-{suffix}");
+
+            navigation.Navigate(typeof(BackupsPage));
+            await Shot(folder, $"11-sauvegardes-locales-{suffix}");
+
+            wizard.PrepareNewBackup();
+            wizard.Pairs[0].Source.SeedDemo("contact@boulangerie-martin.fr", ConnectionError.None);
+            navigation.Navigate(typeof(NewMigrationPage));
+            await Shot(folder, $"12-assistant-sauvegarde-{suffix}");
         }
         shell.CloseWithoutPrompt();
     }

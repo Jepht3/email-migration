@@ -63,7 +63,9 @@ le logo dans `src/MailMigrator.App/Assets/Logo.xaml`.
 - [x] Étape 2 — tous les écrans, avec données fictives (5 migrations simulées)
 - [x] Étape 3a — détection des serveurs (autoconfig → ISPDB → autodiscover → MX + préfixes) et test de connexion avec erreurs en français
 - [x] Étape 3b — moteur de copie d'une tâche : reprise après arrêt, déduplication, reconnexion, pause, SQLite, mots de passe DPAPI
-- [ ] Étape 3c — 5 tâches en parallèle, limites de débit, docker-compose de test
+- [x] Vitesse — copie par lots (un FETCH et un MULTIAPPEND pour 50 messages), téléchargement du lot suivant pendant l'envoi
+- [x] Sauvegarde sur ce PC — en option de la migration directe : boîte → PC (chiffré ou .eml), mise à jour, restauration PC → boîte
+- [ ] Étape 3c — limites de débit (ralentissement automatique)
 - [x] Étape 3d — interface branchée sur le vrai moteur (aperçu réel des dossiers, file de 1 à 5 tâches, reprise au démarrage, réessayer les échecs), notifications Windows
 - [ ] Étape 3e — rapport, vérification finale, exports HTML / CSV
 - [ ] Étape 3f — installeur Inno Setup
