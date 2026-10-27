@@ -209,7 +209,7 @@ public sealed partial class NewMigrationViewModel : ObservableObject
             foreach (var side in new[] { pair.Source, pair.Destination })
             {
                 string? problem = !side.Email.Contains('@') ? "adresse email invalide"
-                    : side.Secret is null ? "mot de passe manquant (ou « Se connecter avec… »)"
+                    : side.Password.Length == 0 ? "mot de passe manquant"
                     : side.IsDetecting ? "détection du serveur en cours, patientez une seconde"
                     : side.Endpoint is null ? "serveur IMAP non renseigné (bouton « Modifier »)"
                     : null;
@@ -227,7 +227,7 @@ public sealed partial class NewMigrationViewModel : ObservableObject
     {
         var pair = FilledPairs.FirstOrDefault();
         if (pair?.Source.Endpoint is not { } source || pair.Destination.Endpoint is not { } destination) return;
-        var key = $"{source}|{destination}|{pair.Source.Secret?.GetHashCode()}|{pair.Destination.Secret?.GetHashCode()}";
+        var key = $"{source}|{destination}|{pair.Source.Password.GetHashCode()}|{pair.Destination.Password.GetHashCode()}";
         if (key == _previewFor && FolderMappings.Count > 0)
         {
             ApplyToggles();
@@ -241,8 +241,8 @@ public sealed partial class NewMigrationViewModel : ObservableObject
         FolderPreviewCaption = $"Dossiers de {pair.Source.Email} → {pair.Destination.Email}. Modifiez une destination si besoin ; les dossiers absents seront créés.";
         try
         {
-            await using var src = _connections.Create(source, pair.Source.CreateAuth()!);
-            await using var dst = _connections.Create(destination, pair.Destination.CreateAuth()!);
+            await using var src = _connections.Create(source, new PasswordAuthProvider(pair.Source.Password));
+            await using var dst = _connections.Create(destination, new PasswordAuthProvider(pair.Destination.Password));
             await Task.WhenAll(src.ConnectAsync(default), dst.ConnectAsync(default));
             var srcFolders = await src.ListFoldersAsync(default);
             var dstFolders = await dst.ListFoldersAsync(default);
@@ -380,7 +380,7 @@ public sealed partial class NewMigrationViewModel : ObservableObject
                 DestinationEmail = pair.Destination.Email.Trim(),
                 Destination = pair.Destination.Endpoint,
                 Options = jobOptions,
-            }, pair.Source.Secret!, pair.Destination.Secret!);
+            }, pair.Source.Password, pair.Destination.Password);
         }
 
         // Les mots de passe ne restent pas dans l'assistant : seule la copie chiffrée est conservée.

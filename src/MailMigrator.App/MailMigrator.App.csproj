@@ -25,9 +25,4 @@
     <ProjectReference Include="..\MailMigrator.Core\MailMigrator.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="oauth.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="oauth.local.json" Condition="Exists('oauth.local.json')" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
 </Project>

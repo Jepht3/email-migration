@@ -9,7 +9,6 @@ using MailMigrator.App.Views.Pages;
 using System.Net.Http;
 using MailMigrator.Core.Abstractions;
 using MailMigrator.Core.Connectivity;
-using MailMigrator.Core.Connectivity.OAuth;
 using MailMigrator.Core.Discovery;
 using MailMigrator.Core.Engine;
 using MailMigrator.Core.Imap;
@@ -56,12 +55,6 @@ public partial class App : Application
                 services.AddSingleton(_ => new HttpClient { DefaultRequestHeaders = { { "User-Agent", "LEWEBMAX-MailMigrator/1.0" } } });
                 services.AddSingleton(sp => ServerDiscoveryService.CreateDefault(sp.GetRequiredService<HttpClient>()));
                 services.AddSingleton<ConnectionTester>();
-
-                // OAuth2 « Se connecter avec Google / Microsoft ».
-                services.AddSingleton(_ => OAuthConfiguration.Load(DataFolder));
-                services.AddSingleton(sp => new OAuthClient(sp.GetRequiredService<HttpClient>()));
-                services.AddSingleton<OAuthSignIn>();
-                services.AddSingleton<AuthProviderFactory>();
                 services.AddSingleton<AccountServices>();
 
                 services.AddSingleton<IMailboxConnectionFactory, MailKitConnectionFactory>();
@@ -83,8 +76,7 @@ public partial class App : Application
                     services.AddSingleton<ISecretProtector, DpapiSecretProtector>();
                     services.AddSingleton(sp => new MigrationService(
                         sp.GetRequiredService<IMigrationStore>(), sp.GetRequiredService<IMailboxConnectionFactory>(),
-                        sp.GetRequiredService<ISecretProtector>(), logger: sp.GetRequiredService<ILogger<MigrationEngine>>(),
-                        authentication: sp.GetRequiredService<AuthProviderFactory>()));
+                        sp.GetRequiredService<ISecretProtector>(), logger: sp.GetRequiredService<ILogger<MigrationEngine>>()));
                     services.AddSingleton<MigrationScheduler>();
                     services.AddSingleton<IMigrationRunner>(sp => sp.GetRequiredService<MigrationScheduler>());
                 }

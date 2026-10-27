@@ -18,6 +18,3 @@ logs/
 
 # Outils de test téléchargés
 tools/greenmail/*.jar
-
-# Identifiants OAuth réels (jamais dans le dépôt)
-oauth.local.json

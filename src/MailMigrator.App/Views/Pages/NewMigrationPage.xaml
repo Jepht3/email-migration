@@ -18,44 +18,7 @@
                             AutomationProperties.Name="{Binding Role, StringFormat='Adresse email {0}'}" />
                 <ui:PasswordBox Margin="0,8,0,0" PlaceholderText="Mot de passe ou mot de passe d'application" Icon="{ui:SymbolIcon Key24}"
                                 Password="{Binding Password, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                Visibility="{Binding UsesPassword, Converter={StaticResource BoolToVisibility}}"
                                 AutomationProperties.Name="{Binding Role, StringFormat='Mot de passe {0}'}" />
-
-                <!-- Connexion OAuth2 (Google, Microsoft) -->
-                <Grid Margin="0,8,0,0" Visibility="{Binding CanUseOAuth, Converter={StaticResource BoolToVisibility}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <ui:Button Appearance="Primary" Command="{Binding SignInCommand}" Icon="{ui:SymbolIcon PersonKey20}" Content="{Binding SignInLabel}"
-                               ToolTip="Autoriser l'accès dans votre navigateur, sans saisir de mot de passe ici" />
-                    <StackPanel Grid.Column="1" Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Center"
-                                Visibility="{Binding IsSigningIn, Converter={StaticResource BoolToVisibility}}">
-                        <ui:ProgressRing Width="16" Height="16" IsIndeterminate="True" />
-                        <TextBlock Margin="8,0,0,0" Style="{StaticResource Text.Caption}" Text="Terminez la connexion dans votre navigateur…" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Caption}" TextWrapping="Wrap"
-                               Text="ou saisissez un mot de passe d'application ci-dessus."
-                               Visibility="{Binding IsSigningIn, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}" />
-                </Grid>
-                <Border Margin="0,8,0,0" Padding="10,8" CornerRadius="8" Background="{DynamicResource Brush.Status.SuccessSoft}"
-                        Visibility="{Binding IsOAuth, Converter={StaticResource BoolToVisibility}}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="18" Foreground="{DynamicResource Brush.Status.Success}" />
-                        <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center" Style="{StaticResource Text.CaptionStrong}"
-                                   Text="{Binding OAuthAccountLabel}" TextTrimming="CharacterEllipsis" />
-                        <ui:Button Grid.Column="2" Appearance="Transparent" Padding="8,2" FontSize="12" Command="{Binding UsePasswordCommand}"
-                                   Content="Utiliser un mot de passe" />
-                    </Grid>
-                </Border>
-                <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Caption}" TextWrapping="Wrap"
-                           Visibility="{Binding OAuthNotConfigured, Converter={StaticResource BoolToVisibility}}"
-                           Text="« Se connecter avec Google / Microsoft » n'est pas encore configuré dans l'application (voir docs/OAUTH.md) : utilisez un mot de passe d'application." />
 
                 <!-- Serveur détecté / squelette pendant la détection -->
                 <Grid Margin="0,12,0,0" MinHeight="28">
