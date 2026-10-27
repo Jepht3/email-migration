@@ -10,6 +10,9 @@
     <!-- CÅ“ur -->
     <PackageVersion Include="MailKit" Version="4.18.1" />
     <PackageVersion Include="DnsClient" Version="1.7.0" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.33" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
     <!-- Journaux -->
     <PackageVersion Include="Serilog" Version="3.1.1" />
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="8.0.0" />

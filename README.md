@@ -52,7 +52,7 @@ le logo dans `src/MailMigrator.App/Assets/Logo.xaml`.
 
 - [x] Étape 2 — tous les écrans, avec données fictives (5 migrations simulées)
 - [x] Étape 3a — détection des serveurs (autoconfig → ISPDB → autodiscover → MX + préfixes) et test de connexion avec erreurs en français
-- [ ] Étape 3b — moteur de copie d'une tâche, reprise, déduplication (SQLite)
+- [x] Étape 3b — moteur de copie d'une tâche : reprise après arrêt, déduplication, reconnexion, pause, SQLite, mots de passe DPAPI
 - [ ] Étape 3c — 5 tâches en parallèle, limites de débit, docker-compose de test
 - [ ] Étape 3d — branchement de l'interface sur le vrai moteur, notifications Windows
 - [ ] Étape 3e — rapport, vérification finale, exports HTML / CSV
