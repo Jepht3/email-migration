@@ -160,7 +160,7 @@ public sealed class MailKitMailboxConnection(ImapEndpoint endpoint, IAuthProvide
         }
     }
 
-    public async Task CreateFolderAsync(string path, CancellationToken cancellationToken)
+    public async Task CreateFolderAsync(string path, SpecialFolder role, CancellationToken cancellationToken)
     {
         var client = Client;
         var separator = DefaultSeparator;

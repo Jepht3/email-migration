@@ -118,10 +118,10 @@ internal sealed class FakeConnection(FakeMailServer server) : IMailboxConnection
         return Task.FromResult<Stream>(new MemoryStream(raw));
     }
 
-    public Task CreateFolderAsync(string path, CancellationToken ct)
+    public Task CreateFolderAsync(string path, SpecialFolder role, CancellationToken ct)
     {
         EnsureConnected();
-        server.AddFolder(path);
+        server.AddFolder(path, role);
         return Task.CompletedTask;
     }
 

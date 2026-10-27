@@ -64,12 +64,19 @@ public interface IMailboxConnection : IAsyncDisposable
     /// </summary>
     Task<Stream> DownloadAsync(string path, uint uid, long size, CancellationToken cancellationToken);
 
-    Task CreateFolderAsync(string path, CancellationToken cancellationToken);
+    /// <param name="role">Rôle du dossier source (envoyés, corbeille…) : conservé par les sauvegardes locales.</param>
+    Task CreateFolderAsync(string path, SpecialFolder role, CancellationToken cancellationToken);
 
     Task AppendAsync(string path, Stream message, MailFlags flags, DateTimeOffset internalDate, CancellationToken cancellationToken);
 
     /// <summary>Vrai si un message portant ce Message-ID existe déjà dans le dossier.</summary>
     Task<bool> ContainsMessageIdAsync(string path, string messageId, CancellationToken cancellationToken);
+}
+
+/// <summary>Destination capable de vérifier la place disponible avant une copie (sauvegarde locale).</summary>
+public interface ICapacityAware
+{
+    Task EnsureCapacityAsync(long bytes, CancellationToken cancellationToken);
 }
 
 public interface IMailboxConnectionFactory

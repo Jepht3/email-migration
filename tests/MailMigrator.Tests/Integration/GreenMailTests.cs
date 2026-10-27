@@ -76,7 +76,7 @@ public sealed class GreenMailTests(ITestOutputHelper output) : IAsyncLifetime
         await using var dest = new MailKitConnectionFactory().Create(Destination, new PasswordAuthProvider("destination"));
         await dest.ConnectAsync(default);
 
-        await dest.CreateFolderAsync("Clients/Dupont", default);
+        await dest.CreateFolderAsync("Clients/Dupont", Core.Models.SpecialFolder.None, default);
         var raw = new MemoryStream();
         await ImapTestKit.Message("<adaptateur@test>", "Devis client Dupont", Day).WriteToAsync(raw);
         raw.Position = 0;
@@ -214,6 +214,45 @@ public sealed class GreenMailTests(ITestOutputHelper output) : IAsyncLifetime
             var dest = await ImapTestKit.InventoryAsync(Destination, "destination");
             Assert.Equal(40, dest.Sum(f => f.Value.Count));
             await scheduler.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Backup_to_this_pc_then_restore_to_another_mailbox()
+    {
+        if (!Enabled) return;
+        await SeedTypicalMailbox();
+        var archivePath = Path.Combine(Path.GetTempPath(), $"lwb-it-archive-{Guid.NewGuid():N}");
+        var archive = ImapEndpoint.LocalArchive(archivePath, Source.UserName);
+        try
+        {
+            using var store = new SqliteMigrationStore(_db);
+            var service = new MigrationService(store, new MailboxConnectionFactory(new FakeProtector()), new FakeProtector());
+            var keep = new MigrationOptions { ErasePasswordsWhenDone = false };
+
+            var backup = service.CreateJob(new MigrationJobDefinition { SourceEmail = Source.UserName, Source = Source, DestinationEmail = "Ce PC", Destination = archive, Options = keep }, "source", "");
+            Assert.Equal(JobStatus.Completed, await service.Open(backup).RunAsync());
+            Assert.Equal(40, Core.Archive.LocalArchiveMailbox.ReadSummary(archivePath)!.Messages);
+
+            var restore = service.CreateJob(new MigrationJobDefinition { SourceEmail = "Ce PC", Source = archive, DestinationEmail = Destination.UserName, Destination = Destination, Options = keep }, "", "destination");
+            Assert.Equal(JobStatus.Completed, await service.Open(restore).RunAsync());
+
+            var source = await ImapTestKit.InventoryAsync(Source, "source");
+            var dest = await ImapTestKit.InventoryAsync(Destination, "destination");
+            foreach (var (folder, messages) in source)
+            {
+                Assert.Equal(messages.Count, dest[folder].Count);
+                foreach (var m in messages)
+                {
+                    var twin = dest[folder].Single(c => c.Envelope!.Subject == m.Envelope!.Subject);
+                    Assert.Equal(m.Flags & ~MessageFlags.Recent, twin.Flags & ~MessageFlags.Recent);
+                    Assert.Equal(m.InternalDate?.ToUniversalTime(), twin.InternalDate?.ToUniversalTime());
+                }
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(archivePath, true); } catch (IOException) { }
         }
     }
 

@@ -78,7 +78,10 @@ public sealed class MigrationEngine(IMigrationStore store, IMailboxConnectionFac
         }
         catch (Exception ex)
         {
-            var info = ConnectionErrorInfo.For(ImapErrorTranslator.Translate(ex, definition.Source.Host));
+            // Erreur de sauvegarde locale (espace disque, clé, fichier abîmé) : son message est déjà explicite.
+            var info = ex is Archive.ArchiveException archive
+                ? new ConnectionErrorInfo(ConnectionError.Unknown, "Sauvegarde locale", archive.Message, "")
+                : ConnectionErrorInfo.For(ImapErrorTranslator.Translate(ex, definition.Source.Host));
             _log.LogError(ex, "Échec de la tâche {JobId}", jobId);
             store.SaveElapsed(jobId, progress.Elapsed);
             store.UpdateJobStatus(jobId, JobStatus.Failed, $"{info.Title} — {ImapErrorTranslator.Flatten(ex)}");
@@ -136,7 +139,7 @@ public sealed class MigrationEngine(IMigrationStore store, IMailboxConnectionFac
             // Dossier destination : création si besoin, puis inventaire pour la déduplication.
             if (!destinationFolders.Any(d => d.Path == mapping.DestinationPath))
             {
-                await _retry.ExecuteAsync(c => destination.CreateFolderAsync(mapping.DestinationPath, c), Reconnect(progress, destination), ct);
+                await _retry.ExecuteAsync(c => destination.CreateFolderAsync(mapping.DestinationPath, mapping.Role, c), Reconnect(progress, destination), ct);
                 destinationFolders.Add(new RemoteFolder(mapping.DestinationPath, destination.DefaultSeparator, SpecialFolder.None));
                 progress.Info($"Dossier créé dans la destination : {mapping.DestinationPath}");
             }
@@ -152,6 +155,13 @@ public sealed class MigrationEngine(IMigrationStore store, IMailboxConnectionFac
         }
 
         var pending = plan.Sum(p => store.GetTotals(p.Folder.Id).Pending);
+
+        // Sauvegarde sur ce PC : on vérifie la place disponible avant de copier quoi que ce soit.
+        if (destination is ICapacityAware capacity)
+        {
+            var bytes = plan.Sum(p => store.GetMessages(p.Folder.Id, MessageStatus.Pending).Sum(m => m.Size));
+            await capacity.EnsureCapacityAsync(bytes, ct);
+        }
         progress.Info($"Analyse terminée : {plan.Sum(p => p.Folder.SourceCount):N0} messages dans {plan.Count} dossiers, {pending:N0} à traiter.");
         return plan;
     }
