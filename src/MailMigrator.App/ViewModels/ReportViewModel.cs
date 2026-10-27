@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.ComponentModel;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -22,13 +23,15 @@ public sealed partial class ReportViewModel : ObservableObject
     private readonly AppNavigation _navigation;
     private readonly DialogService _dialogs;
     private readonly IMigrationRunner _runner;
+    private readonly SettingsViewModel _settings;
 
-    public ReportViewModel(IMigrationHistory history, AppNavigation navigation, DialogService dialogs, IMigrationRunner runner)
+    public ReportViewModel(IMigrationHistory history, AppNavigation navigation, DialogService dialogs, IMigrationRunner runner, SettingsViewModel settings)
     {
         _history = history;
         _navigation = navigation;
         _dialogs = dialogs;
         _runner = runner;
+        _settings = settings;
         MessagesView = CollectionViewSource.GetDefaultView(Messages);
         MessagesView.Filter = Matches;
     }
@@ -137,10 +140,40 @@ public sealed partial class ReportViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ExportHtml() => NotYet("Export HTML");
+    private Task ExportHtmlAsync() => ExportAsync(".html", "Page web (*.html)|*.html", async (report, stream) =>
+    {
+        await using var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false));
+        await writer.WriteAsync(ReportExporter.BuildHtml(report));
+    }, openAfter: true);
 
     [RelayCommand]
-    private void ExportCsv() => NotYet("Export CSV");
+    private Task ExportCsvAsync() => ExportAsync(".csv", "Fichier CSV pour Excel (*.csv)|*.csv", (report, stream) => ReportExporter.WriteCsvAsync(report, stream), openAfter: false);
+
+    /// <summary>Enregistre le rapport dans le dossier des rapports (Paramètres), avec un nom explicite.</summary>
+    private async Task ExportAsync(string extension, string filter, Func<JobReport, Stream, Task> write, bool openAfter)
+    {
+        if (_report is null || Entry is null) return;
+        Directory.CreateDirectory(_settings.ReportsFolder);
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Exporter le rapport",
+            InitialDirectory = _settings.ReportsFolder,
+            FileName = ReportExporter.SuggestedFileName(Entry, extension),
+            Filter = filter,
+            DefaultExt = extension,
+        };
+        if (dialog.ShowDialog() != true) return;
+        try
+        {
+            await using (var file = File.Create(dialog.FileName)) await write(_report, file);
+            _dialogs.Notify("Rapport exporté", dialog.FileName, ControlAppearance.Success, SymbolRegular.CheckmarkCircle24);
+            if (openAfter) System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dialog.FileName) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _dialogs.Notify("Export impossible", ex.Message, ControlAppearance.Danger, SymbolRegular.ErrorCircle24);
+        }
+    }
 
     [RelayCommand]
     private void RetryFailed()
@@ -162,8 +195,4 @@ public sealed partial class ReportViewModel : ObservableObject
 
     [RelayCommand]
     private void ShowOnlyFailures() => StatusFilter = StatusFilters[3];
-
-    private void NotYet(string feature) =>
-        _dialogs.Notify(feature, "Maquette de validation du design : cette action sera branchée à l'étape (e).",
-            ControlAppearance.Info, SymbolRegular.Info24);
 }

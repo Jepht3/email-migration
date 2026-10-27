@@ -67,5 +67,5 @@ le logo dans `src/MailMigrator.App/Assets/Logo.xaml`.
 - [x] Sauvegarde sur ce PC — en option de la migration directe : boîte → PC (chiffré ou .eml), mise à jour, restauration PC → boîte
 - [x] Étape 3c — limites de débit : détection des refus « [LIMIT] / [UNAVAILABLE] / too many », attente de 30 s à 5 min, lots réduits et pause entre lots, puis réaccélération progressive
 - [x] Étape 3d — interface branchée sur le vrai moteur (aperçu réel des dossiers, file de 1 à 5 tâches, reprise au démarrage, réessayer les échecs), notifications Windows
-- [ ] Étape 3e — rapport, vérification finale, exports HTML / CSV
+- [x] Étape 3e — rapport (en-tête « en cours » / terminé), vérification finale, exports HTML (design de l'app, impression, mobile) et CSV (Excel)
 - [ ] Étape 3f — installeur Inno Setup
