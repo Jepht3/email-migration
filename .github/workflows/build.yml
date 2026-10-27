@@ -1,0 +1,73 @@
+# Compilation, tests et installeur à chaque push ; Release GitHub pour chaque tag « v* ».
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Compilation, tests et installeur
+    runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Compilation
+        run: dotnet build MailMigrator.sln -c Release
+
+      - name: Tests unitaires
+        run: dotnet test tests/MailMigrator.Tests -c Release --no-build --logger "trx;LogFileName=unitaires.trx"
+
+      - name: Tests d'intégration (serveur IMAP GreenMail)
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts\test-integration.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Installation d'Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Installeur
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Résultats des tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultats-tests
+          path: tests/MailMigrator.Tests/TestResults/*.trx
+          if-no-files-found: ignore
+
+      - name: Installeur (téléchargeable depuis l'onglet Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: installeur
+          path: installer/Output/*.exe
+
+      - name: Release GitHub (tags v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/Output/*.exe
+          generate_release_notes: true

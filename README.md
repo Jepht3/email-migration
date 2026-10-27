@@ -51,6 +51,13 @@ Lancez `LEWEBMAX-MailMigrator-Setup-<version>.exe` (voir « Créer l'installeur 
 
 Configuration minimale : Windows 10 version 1809 (64 bits) ou plus récent ; Windows 11 recommandé (effet Mica).
 
+## Compilation automatique (GitHub Actions)
+
+À chaque push sur `main`, GitHub compile la solution, lance les tests unitaires et d'intégration
+(GreenMail) puis construit l'installeur, téléchargeable dans l'onglet **Actions** (artefact « installeur »).
+Pour publier une version : `git tag v0.9.0 && git push origin v0.9.0` — une **Release** est créée
+avec l'installeur en pièce jointe. Workflow : `.github/workflows/build.yml`.
+
 ## Développement
 
 ### Prérequis
