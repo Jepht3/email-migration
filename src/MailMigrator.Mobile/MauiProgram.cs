@@ -34,6 +34,8 @@ public static class MauiProgram
 
         services.AddSingleton<MigrationsViewModel>();
         services.AddSingleton<NewMigrationViewModel>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<SettingsPage>();
         services.AddTransient<ReportViewModel>();
         services.AddSingleton<MigrationsPage>();
         services.AddSingleton<NewMigrationPage>();

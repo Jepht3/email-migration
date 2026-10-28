@@ -12,7 +12,7 @@
     <ApplicationTitle>LEWEBMAX Migrator</ApplicationTitle>
     <ApplicationId>com.lewebmax.mailmigrator</ApplicationId>
     <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
-    <ApplicationVersion>10</ApplicationVersion>
+    <ApplicationVersion>11</ApplicationVersion>
     <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
 
     <AndroidPackageFormat>apk</AndroidPackageFormat>

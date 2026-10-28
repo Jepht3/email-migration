@@ -77,6 +77,7 @@ public partial class App : Application
             .UseSerilog()
             .ConfigureServices(services =>
             {
+                services.AddSingleton(_ => AppSettings.Load());
                 services.AddSingleton<ThemeService>();
                 services.AddSingleton<AppNavigation>();
                 services.AddSingleton<IPageService, PageService>();
@@ -137,6 +138,8 @@ public partial class App : Application
         var services = _host.Services;
         services.GetRequiredService<ThemeService>().Initialize();
         var runner = services.GetRequiredService<IMigrationRunner>();
+        // Applique les réglages enregistrés (thème, accent, tâches simultanées) avant d'afficher la fenêtre.
+        services.GetRequiredService<SettingsViewModel>();
         runner.JobFinished += (_, job) => Dispatcher.BeginInvoke(() => OnJobFinished(job));
         if (IsDemo) services.GetRequiredService<DemoMigrationRunner>().SeedDemo();
         else

@@ -46,6 +46,15 @@ public partial class NewMigrationPage : ContentPage
     }
 }
 
+public partial class SettingsPage : ContentPage
+{
+    public SettingsPage(SettingsViewModel viewModel)
+    {
+        BindingContext = viewModel;
+        InitializeComponent();
+    }
+}
+
 public partial class ReportPage : ContentPage
 {
     public ReportPage(ReportViewModel viewModel)

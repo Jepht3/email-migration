@@ -48,6 +48,24 @@
                         </VerticalStackLayout>
                         <Switch Grid.Column="1" IsToggled="{Binding ErasePasswords}" />
                     </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout>
+                            <Label Text="Limiter à une période" FontAttributes="Bold" />
+                            <Label Style="{StaticResource Caption}" Text="Seuls les emails reçus entre ces dates sont copiés." />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" IsToggled="{Binding UseDateRange}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8" IsVisible="{Binding UseDateRange}">
+                        <Label Style="{StaticResource Caption}" Text="Du" VerticalOptions="Center" />
+                        <DatePicker Grid.Column="1" Date="{Binding DateFrom}" Format="dd/MM/yyyy" />
+                        <Label Grid.Column="2" Style="{StaticResource Caption}" Text="au" VerticalOptions="Center" />
+                        <DatePicker Grid.Column="3" Date="{Binding DateTo}" Format="dd/MM/yyyy" />
+                    </Grid>
+                    <VerticalStackLayout>
+                        <Label Text="Dossiers à exclure" FontAttributes="Bold" />
+                        <Label Style="{StaticResource Caption}" Text="Noms séparés par des virgules, par exemple : Archives, Newsletters" />
+                        <Entry Placeholder="Aucun" Text="{Binding ExcludedFolders}" IsSpellCheckEnabled="False" />
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 

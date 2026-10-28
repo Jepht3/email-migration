@@ -4,6 +4,7 @@ using MailMigrator.Core.Abstractions;
 using MailMigrator.Core.Connectivity;
 using MailMigrator.Core.Discovery;
 using MailMigrator.Core.Models;
+using MailMigrator.Mobile.Services;
 
 namespace MailMigrator.Mobile.ViewModels;
 
@@ -26,7 +27,11 @@ public sealed partial class NewMigrationViewModel : ObservableObject
     [ObservableProperty] private bool _includeTrash;
     [ObservableProperty] private bool _includeJunk;
     [ObservableProperty] private bool _verifyAfterCopy = true;
-    [ObservableProperty] private bool _erasePasswords = true;
+    [ObservableProperty] private bool _erasePasswords = MobileSettings.ErasePasswords;
+    [ObservableProperty] private bool _useDateRange;
+    [ObservableProperty] private DateTime _dateFrom = DateTime.Today.AddYears(-1);
+    [ObservableProperty] private DateTime _dateTo = DateTime.Today;
+    [ObservableProperty] private string _excludedFolders = "";
 
     [RelayCommand]
     private async Task StartAsync()
@@ -40,6 +45,11 @@ public sealed partial class NewMigrationViewModel : ObservableObject
                 : null;
             if (problem is null) continue;
             await Shell.Current.DisplayAlertAsync($"{side.Role} incomplète", $"{(side.Email.Length > 0 ? side.Email : "Boîte")} : {problem}.", "OK");
+            return;
+        }
+        if (UseDateRange && DateFrom.Date > DateTo.Date)
+        {
+            await Shell.Current.DisplayAlertAsync("Période invalide", "La date de début est après la date de fin.", "OK");
             return;
         }
 
@@ -56,6 +66,9 @@ public sealed partial class NewMigrationViewModel : ObservableObject
                 IncludeJunk = IncludeJunk,
                 VerifyAfterCopy = VerifyAfterCopy,
                 ErasePasswordsWhenDone = ErasePasswords,
+                From = UseDateRange ? DateOnly.FromDateTime(DateFrom) : null,
+                To = UseDateRange ? DateOnly.FromDateTime(DateTo) : null,
+                ExcludedFolders = ExcludedFolders.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             },
         }, Source.Password, Destination.Password);
         App.StartBackgroundService();
@@ -63,6 +76,7 @@ public sealed partial class NewMigrationViewModel : ObservableObject
         // Les mots de passe ne restent pas dans le formulaire : seule la copie chiffrée est conservée.
         Source.Clear();
         Destination.Clear();
+        ErasePasswords = MobileSettings.ErasePasswords;
         await Shell.Current.GoToAsync("//migrations");
     }
 }

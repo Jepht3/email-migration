@@ -58,12 +58,15 @@ public sealed partial class NewMigrationViewModel : ObservableObject
     private readonly DialogService _dialogs;
     private readonly AccountServices _services;
     private readonly IMailboxConnectionFactory _connections;
+    private readonly AppSettings _settings;
     private int _nextColor;
     private string? _previewFor;
 
     public NewMigrationViewModel(IMigrationRunner runner, AppNavigation navigation, DialogService dialogs, AccountServices services,
-        IMailboxConnectionFactory connections)
+        IMailboxConnectionFactory connections, AppSettings settings)
     {
+        _settings = settings;
+        _erasePasswords = settings.ErasePasswords;
         _runner = runner;
         _navigation = navigation;
         _dialogs = dialogs;
@@ -323,6 +326,7 @@ public sealed partial class NewMigrationViewModel : ObservableObject
         FolderMappings.Clear();
         DestinationFolders.Clear();
         _previewFor = null;
+        ErasePasswords = _settings.ErasePasswords;
         AddPair();
         ShowStep(0);
     }
@@ -433,6 +437,7 @@ public sealed partial class NewMigrationViewModel : ObservableObject
         FolderMappings.Clear();
         DestinationFolders.Clear();
         _previewFor = null;
+        ErasePasswords = _settings.ErasePasswords;
         AddPair();
         Step = 0;
         UpdateSteps();

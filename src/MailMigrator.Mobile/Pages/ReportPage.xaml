@@ -51,19 +51,29 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Label Style="{StaticResource Section}" Text="Messages en échec" Margin="0,8,0,8" IsVisible="{Binding HasFailures}" />
-            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Failures}">
-                <BindableLayout.ItemTemplate>
-                    <DataTemplate x:DataType="vm:FailureLine">
-                        <Border Style="{StaticResource Card}" Padding="12">
-                            <VerticalStackLayout>
-                                <Label FontAttributes="Bold" Text="{Binding Subject}" LineBreakMode="TailTruncation" />
-                                <Label Style="{StaticResource Caption}" Text="{Binding Reason}" TextColor="{StaticResource Error}" />
-                            </VerticalStackLayout>
-                        </Border>
-                    </DataTemplate>
-                </BindableLayout.ItemTemplate>
-            </VerticalStackLayout>
+            <Label Style="{StaticResource Section}" Text="Messages" Margin="0,8,0,8" />
+            <SearchBar Placeholder="Objet, expéditeur ou dossier" Text="{Binding SearchText}" />
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,4">
+                <Label Text="Seulement les échecs" VerticalOptions="Center" />
+                <Switch Grid.Column="1" IsToggled="{Binding OnlyFailures}" />
+            </Grid>
+            <Label Style="{StaticResource Caption}" Text="{Binding MessagesCaption}" Margin="0,0,0,8" />
+            <Border Style="{StaticResource Card}" Padding="12,4">
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Messages}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MessageLine">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Padding="0,8">
+                                <Label FontAttributes="Bold" Text="{Binding Icon}" TextColor="{Binding IconColor}" />
+                                <VerticalStackLayout Grid.Column="1">
+                                    <Label FontAttributes="Bold" Text="{Binding Subject}" LineBreakMode="TailTruncation" />
+                                    <Label Style="{StaticResource Caption}" FontSize="12" Text="{Binding Details}" LineBreakMode="TailTruncation" />
+                                    <Label Style="{StaticResource Caption}" FontSize="12" Text="{Binding Reason}" TextColor="{StaticResource Error}" IsVisible="{Binding HasReason}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </Border>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

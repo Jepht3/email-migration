@@ -16,5 +16,7 @@
                       ContentTemplate="{DataTemplate pages:MigrationsPage}" />
         <ShellContent Route="nouvelle" Title="Nouvelle" Icon="tab_new.png"
                       ContentTemplate="{DataTemplate pages:NewMigrationPage}" />
+        <ShellContent Route="parametres" Title="Paramètres" Icon="tab_settings.png"
+                      ContentTemplate="{DataTemplate pages:SettingsPage}" />
     </TabBar>
 </Shell>

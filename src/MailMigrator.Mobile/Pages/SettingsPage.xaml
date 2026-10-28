@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MailMigrator.Mobile.ViewModels"
+             x:Class="MailMigrator.Mobile.Pages.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             Title="Paramètres"
+             Shell.NavBarIsVisible="False">
+    <ScrollView>
+        <VerticalStackLayout Padding="16,24,16,24">
+            <Label Style="{StaticResource Title}" Text="Paramètres" />
+            <Label Margin="0,2,0,16" Style="{StaticResource Caption}" Text="Réglages conservés sur ce téléphone." />
+
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Style="{StaticResource CardTitle}" Text="Apparence" />
+                    <Picker Title="Thème" ItemsSource="{Binding Themes}" SelectedIndex="{Binding ThemeIndex}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Style="{StaticResource CardTitle}" Text="Migrations simultanées" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="{Binding ConcurrencyLabel}" VerticalOptions="Center" />
+                        <Stepper Grid.Column="1" Minimum="1" Maximum="5" Increment="1" Value="{Binding MaxConcurrency}" />
+                    </Grid>
+                    <Label Style="{StaticResource Caption}"
+                           Text="Au-delà, les migrations attendent leur tour. Sur données mobiles ou batterie faible, 1 ou 2 est plus raisonnable." />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout>
+                        <Label Text="Effacer les mots de passe à la fin" FontAttributes="Bold" />
+                        <Label Style="{StaticResource Caption}" Text="Valeur proposée par défaut pour chaque nouvelle migration." />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1" IsToggled="{Binding ErasePasswords}" />
+                </Grid>
+            </Border>
+
+            <Label Margin="0,8,0,0" Style="{StaticResource Caption}" HorizontalOptions="Center" Text="{Binding Version}" />
+            <Label Style="{StaticResource Caption}" HorizontalOptions="Center" Text="LEWEBMAX Mail Migrator" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

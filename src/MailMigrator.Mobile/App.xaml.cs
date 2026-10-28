@@ -1,6 +1,7 @@
 using MailMigrator.Core.Abstractions;
 using MailMigrator.Core.Engine;
 using MailMigrator.Core.Models;
+using MailMigrator.Mobile.Services;
 
 namespace MailMigrator.Mobile;
 
@@ -12,9 +13,11 @@ public partial class App : Application
     {
         _services = services;
         InitializeComponent();
-        UserAppTheme = AppTheme.Unspecified; // suit le thème clair / sombre du téléphone
+        // Thème choisi dans les paramètres (par défaut : celui du téléphone).
+        UserAppTheme = MobileSettings.ToAppTheme(MobileSettings.Theme);
 
         var scheduler = services.GetRequiredService<MigrationScheduler>();
+        scheduler.MaxConcurrency = MobileSettings.MaxConcurrency;
         scheduler.JobFinished += (_, job) => MainThread.BeginInvokeOnMainThread(() => Notify(job));
     }
 
