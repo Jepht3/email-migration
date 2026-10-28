@@ -29,6 +29,8 @@ public sealed class ConnectionTester
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(DefaultTimeout);
         using var client = new ImapClient { Timeout = (int)DefaultTimeout.TotalMilliseconds };
+        string? certificateProblem = null;
+        TlsPolicy.Configure(client, reason => certificateProblem = reason);
         try
         {
             await client.ConnectAsync(endpoint.Host, endpoint.Port, endpoint.Security.ToSocketOptions(), timeout.Token).ConfigureAwait(false);
@@ -47,7 +49,9 @@ public sealed class ConnectionTester
         }
         catch (Exception ex)
         {
-            return new ConnectionTestResult(ImapErrorTranslator.Translate(ex, endpoint.Host), ImapErrorTranslator.Flatten(ex));
+            var detail = ImapErrorTranslator.Flatten(ex);
+            if (certificateProblem is not null) detail = certificateProblem + " | " + detail;
+            return new ConnectionTestResult(ImapErrorTranslator.Translate(ex, endpoint.Host), detail);
         }
     }
 }

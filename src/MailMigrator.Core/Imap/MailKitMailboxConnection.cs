@@ -37,6 +37,7 @@ public sealed class MailKitMailboxConnection(ImapEndpoint endpoint, IAuthProvide
         }
         _folders.Clear();
         _client = new ImapClient { Timeout = 60_000 };
+        TlsPolicy.Configure(_client);
         await _client.ConnectAsync(endpoint.Host, endpoint.Port, endpoint.Security.ToSocketOptions(), cancellationToken);
         await auth.AuthenticateAsync(_client, endpoint.UserName, cancellationToken);
 

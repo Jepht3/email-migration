@@ -27,7 +27,11 @@ public sealed partial class AccountSideViewModel(string role, ServerDiscoverySer
 
     [ObservableProperty] private bool _isTesting;
     [ObservableProperty] private string? _testMessage;
-    [ObservableProperty] private string? _testDetail;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTestDetail))]
+    private string? _testDetail;
+
+    public bool HasTestDetail => !string.IsNullOrEmpty(TestDetail);
     [ObservableProperty] private bool _testOk;
     [ObservableProperty] private bool _hasTestResult;
 

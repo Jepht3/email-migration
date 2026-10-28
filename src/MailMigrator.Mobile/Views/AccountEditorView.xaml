@@ -35,13 +35,18 @@
                 <Label Style="{StaticResource Caption}" Text="Connexion en cours…" VerticalOptions="Center" />
             </HorizontalStackLayout>
             <Border Style="{StaticResource Inset}" IsVisible="{Binding HasTestResult}">
-                <Label FontSize="13" Text="{Binding TestMessage}" TextColor="{StaticResource Error}">
-                    <Label.Triggers>
-                        <DataTrigger TargetType="Label" Binding="{Binding TestOk}" Value="True">
-                            <Setter Property="TextColor" Value="{StaticResource Success}" />
-                        </DataTrigger>
-                    </Label.Triggers>
-                </Label>
+                <VerticalStackLayout Spacing="6">
+                    <Label FontSize="13" Text="{Binding TestMessage}" TextColor="{StaticResource Error}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding TestOk}" Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource Success}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <!-- Détail technique : sélectionnable pour le copier et l'envoyer au support. -->
+                    <Editor Text="{Binding TestDetail}" IsReadOnly="True" AutoSize="TextChanges" FontSize="11"
+                            IsVisible="{Binding HasTestDetail}" TextColor="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
+                </VerticalStackLayout>
             </Border>
         </VerticalStackLayout>
     </Border>
