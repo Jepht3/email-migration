@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Une boîte : adresse, mot de passe, serveur détecté, test de connexion. -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MailMigrator.Mobile.ViewModels"
+             x:Class="MailMigrator.Mobile.Views.AccountEditorView"
+             x:DataType="vm:AccountSideViewModel">
+    <Border Style="{StaticResource Card}">
+        <VerticalStackLayout Spacing="8">
+            <Label Style="{StaticResource CardTitle}" Text="{Binding Role}" />
+            <Entry Placeholder="adresse@domaine.fr" Keyboard="Email" Text="{Binding Email}" IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" />
+            <Entry Placeholder="Mot de passe ou mot de passe d'application" IsPassword="True" Text="{Binding Password}" />
+
+            <HorizontalStackLayout Spacing="8" IsVisible="{Binding IsDetecting}">
+                <ActivityIndicator IsRunning="True" HeightRequest="18" WidthRequest="18" />
+                <Label Style="{StaticResource Caption}" Text="Détection du serveur IMAP…" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding ShowServer}">
+                <Label Style="{StaticResource Caption}" Text="{Binding ServerLabel}" VerticalOptions="Center" />
+                <Button Grid.Column="1" Style="{StaticResource Secondary}" Text="Modifier" Command="{Binding ToggleAdvancedCommand}" Padding="12,4" MinimumHeightRequest="36" />
+            </Grid>
+            <VerticalStackLayout Spacing="6" IsVisible="{Binding ShowAdvanced}">
+                <Entry Placeholder="Serveur IMAP" Text="{Binding Host}" IsSpellCheckEnabled="False" />
+                <Grid ColumnDefinitions="100,*" ColumnSpacing="8">
+                    <Entry Placeholder="Port" Keyboard="Numeric" Text="{Binding Port}" />
+                    <Picker Grid.Column="1" Title="Chiffrement" ItemsSource="{Binding SecurityOptions}" SelectedIndex="{Binding SecurityIndex}" />
+                </Grid>
+                <Label Style="{StaticResource Caption}" TextColor="{StaticResource Warning}" IsVisible="{Binding IsUnencrypted}"
+                       Text="⚠ Connexion non chiffrée : le mot de passe et les emails circuleront en clair." />
+            </VerticalStackLayout>
+
+            <Button Style="{StaticResource Secondary}" Text="Tester la connexion" Command="{Binding TestCommand}" />
+            <HorizontalStackLayout Spacing="8" IsVisible="{Binding IsTesting}">
+                <ActivityIndicator IsRunning="True" HeightRequest="18" WidthRequest="18" />
+                <Label Style="{StaticResource Caption}" Text="Connexion en cours…" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Border Style="{StaticResource Inset}" IsVisible="{Binding HasTestResult}">
+                <Label FontSize="13" Text="{Binding TestMessage}" TextColor="{StaticResource Error}">
+                    <Label.Triggers>
+                        <DataTrigger TargetType="Label" Binding="{Binding TestOk}" Value="True">
+                            <Setter Property="TextColor" Value="{StaticResource Success}" />
+                        </DataTrigger>
+                    </Label.Triggers>
+                </Label>
+            </Border>
+        </VerticalStackLayout>
+    </Border>
+</ContentView>

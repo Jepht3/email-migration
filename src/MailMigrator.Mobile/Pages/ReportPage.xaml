@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MailMigrator.Mobile.ViewModels"
+             x:Class="MailMigrator.Mobile.Pages.ReportPage"
+             x:DataType="vm:ReportViewModel"
+             Title="Rapport">
+    <ScrollView>
+        <VerticalStackLayout Padding="16,16,16,24" Spacing="0">
+            <Label Style="{StaticResource Title}" FontSize="22" Text="{Binding Title}" />
+            <Label Margin="0,4,0,16" Style="{StaticResource Caption}" Text="{Binding Summary}" />
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="8" Margin="0,0,0,12">
+                <Border Style="{StaticResource Card}" Margin="0" Padding="12">
+                    <VerticalStackLayout><Label Style="{StaticResource Caption}" Text="Copiés" /><Label Style="{StaticResource Number}" Text="{Binding Copied}" TextColor="{StaticResource Success}" /></VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0" Padding="12">
+                    <VerticalStackLayout><Label Style="{StaticResource Caption}" Text="Déjà présents" /><Label Style="{StaticResource Number}" Text="{Binding Skipped}" /></VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0" Padding="12">
+                    <VerticalStackLayout><Label Style="{StaticResource Caption}" Text="Échecs" /><Label Style="{StaticResource Number}" Text="{Binding Failed}" TextColor="{StaticResource Error}" /></VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Card}" Margin="0" Padding="12">
+                    <VerticalStackLayout><Label Style="{StaticResource Caption}" Text="Volume" /><Label Style="{StaticResource Number}" Text="{Binding Volume}" /></VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource Card}" Margin="0" Padding="12">
+                    <VerticalStackLayout><Label Style="{StaticResource Caption}" Text="Durée" /><Label Style="{StaticResource Number}" FontSize="16" Text="{Binding Duration}" /></VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,0,0,8">
+                <Button Text="Partager (HTML)" Command="{Binding ShareHtmlCommand}" />
+                <Button Grid.Column="1" Style="{StaticResource Secondary}" Text="Partager (CSV)" Command="{Binding ShareCsvCommand}" />
+            </Grid>
+            <Button Style="{StaticResource Secondary}" Text="Réessayer les échecs" Command="{Binding RetryCommand}" IsVisible="{Binding CanRetry}" Margin="0,0,0,12" />
+
+            <Label Style="{StaticResource Section}" Text="Dossiers" Margin="0,8,0,8" />
+            <Border Style="{StaticResource Card}" Padding="12,4">
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Folders}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FolderLine">
+                            <Grid ColumnDefinitions="*,Auto" Padding="0,8">
+                                <VerticalStackLayout>
+                                    <Label FontAttributes="Bold" Text="{Binding Name}" />
+                                    <Label Style="{StaticResource Caption}" Text="{Binding Counts}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1" FontAttributes="Bold" Text="{Binding Check}" TextColor="{Binding CheckColor}" VerticalOptions="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Style="{StaticResource Section}" Text="Messages en échec" Margin="0,8,0,8" IsVisible="{Binding HasFailures}" />
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Failures}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FailureLine">
+                        <Border Style="{StaticResource Card}" Padding="12">
+                            <VerticalStackLayout>
+                                <Label FontAttributes="Bold" Text="{Binding Subject}" LineBreakMode="TailTruncation" />
+                                <Label Style="{StaticResource Caption}" Text="{Binding Reason}" TextColor="{StaticResource Error}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MailMigrator.Mobile.ViewModels"
+             x:Class="MailMigrator.Mobile.Pages.MigrationsPage"
+             x:DataType="vm:MigrationsViewModel"
+             Title="Migrations"
+             Shell.NavBarIsVisible="False">
+    <ScrollView>
+        <VerticalStackLayout Padding="16,24,16,24">
+            <Label Style="{StaticResource Title}" Text="Migrations" />
+            <Label Margin="0,2,0,16" Style="{StaticResource Caption}" Text="LEWEBMAX Mail Migrator — les migrations continuent écran éteint." />
+
+            <!-- En cours -->
+            <Label Style="{StaticResource Section}" Text="En cours" Margin="0,0,0,8" IsVisible="{Binding HasRunning}" />
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Running}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="vm:JobItemViewModel">
+                        <Border Style="{StaticResource Card}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MigrationsViewModel}}, Path=OpenReportCommand}"
+                                                      CommandParameter="{Binding Id}" />
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="8">
+                                <Grid ColumnDefinitions="40,*,Auto" ColumnSpacing="12">
+                                    <Border WidthRequest="40" HeightRequest="40" StrokeShape="RoundRectangle 20" StrokeThickness="0" BackgroundColor="{Binding Color}">
+                                        <Label Text="{Binding Initials}" TextColor="White" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                        <Label Style="{StaticResource CardTitle}" Text="{Binding Source}" LineBreakMode="TailTruncation" />
+                                        <Label Style="{StaticResource Caption}" Text="{Binding Destination}" LineBreakMode="TailTruncation" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="2" Style="{StaticResource Caption}" FontAttributes="Bold" Text="{Binding Status}" VerticalOptions="Start" />
+                                </Grid>
+                                <ProgressBar Progress="{Binding Progress}" ProgressColor="{Binding Color}" />
+                                <Label Style="{StaticResource Caption}" Text="{Binding Counts}" />
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                    <Border Style="{StaticResource Inset}">
+                                        <VerticalStackLayout>
+                                            <Label Style="{StaticResource Caption}" Text="✔ Copiés" TextColor="{StaticResource Success}" />
+                                            <Label Style="{StaticResource Number}" Text="{Binding Copied}" />
+                                        </VerticalStackLayout>
+                                    </Border>
+                                    <Border Grid.Column="1" Style="{StaticResource Inset}">
+                                        <VerticalStackLayout>
+                                            <Label Style="{StaticResource Caption}" Text="↷ Déjà présents" />
+                                            <Label Style="{StaticResource Number}" Text="{Binding Skipped}" />
+                                        </VerticalStackLayout>
+                                    </Border>
+                                    <Border Grid.Column="2" Style="{StaticResource Inset}">
+                                        <VerticalStackLayout>
+                                            <Label Style="{StaticResource Caption}" Text="✘ Échecs" TextColor="{StaticResource Error}" />
+                                            <Label Style="{StaticResource Number}" Text="{Binding Failed}" />
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </Grid>
+                                <Label Style="{StaticResource Caption}" Text="{Binding Folder}" />
+                                <Label Style="{StaticResource Caption}" Text="{Binding Speed}" />
+                                <Label Style="{StaticResource Caption}" Text="{Binding LastActivity}" LineBreakMode="TailTruncation" FontSize="11" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                    <Button Style="{StaticResource Secondary}" Text="⏸ Pause" Command="{Binding PauseCommand}" IsVisible="{Binding IsActive}" />
+                                    <Button Style="{StaticResource Secondary}" Text="▶ Reprendre" Command="{Binding ResumeCommand}" IsVisible="{Binding IsPaused}" />
+                                    <Button Grid.Column="1" Style="{StaticResource Danger}" Text="✕ Annuler" Command="{Binding CancelCommand}"
+                                            IsVisible="{Binding CanCancel}" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <!-- Historique -->
+            <Label Style="{StaticResource Section}" Text="Historique" Margin="0,8,0,8" />
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding History}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="vm:HistoryItem">
+                        <Border Style="{StaticResource Card}" Padding="14,12">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MigrationsViewModel}}, Path=OpenReportCommand}"
+                                                      CommandParameter="{Binding Id}" />
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="2">
+                                <Label Style="{StaticResource CardTitle}" FontSize="15" Text="{Binding Title}" LineBreakMode="TailTruncation" />
+                                <Label Style="{StaticResource Caption}" Text="{Binding Subtitle}" LineBreakMode="TailTruncation" />
+                                <Label Style="{StaticResource Caption}" FontAttributes="Bold" Text="{Binding Status}" TextColor="{Binding StatusColor}" />
+                                <Label Style="{StaticResource Caption}" Text="{Binding Details}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <!-- État vide -->
+            <VerticalStackLayout IsVisible="{Binding IsEmpty}" Spacing="10" Margin="0,24" HorizontalOptions="Center">
+                <Label Style="{StaticResource Section}" Text="Lancez votre première migration" HorizontalOptions="Center" />
+                <Label Style="{StaticResource Caption}" Text="Ses progrès et son rapport s'afficheront ici." HorizontalOptions="Center" />
+                <Button Text="Nouvelle migration" Command="{Binding NewMigrationCommand}" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

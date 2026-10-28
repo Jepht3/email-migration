@@ -41,6 +41,38 @@ rapport final exportable, et sauvegarde sur le PC pour les changements de serveu
 - TLS par défaut ; connexion non chiffrée seulement si elle est choisie explicitement, avec avertissement.
 - Une seule instance de l'application à la fois (pas de migration reprise en double).
 
+## Version Android
+
+Application Android (`src/MailMigrator.Mobile`, .NET MAUI) qui réutilise le même cœur
+(`MailMigrator.Core`) : détection des serveurs, test de connexion, moteur rapide par lots,
+reprise, déduplication, ralentissement automatique, rapports.
+
+- **Migrations** : migrations en cours (progression, copiés / déjà présents / échecs, vitesse,
+  temps restant, pause / reprise / annulation) et historique ; un appui ouvre le rapport.
+- **Nouvelle** : source et destination, serveur détecté automatiquement, test de connexion,
+  options (corbeille, spams, vérification, effacement des mots de passe).
+- **Rapport** : chiffres clés, bilan par dossier avec écarts, échecs, **partage HTML / CSV**
+  (e-mail, WhatsApp, Drive…), « Réessayer les échecs ».
+- La migration tourne dans un **service au premier plan** avec une notification de progression :
+  elle continue écran éteint ; notification à la fin. Reprise automatique au redémarrage de l'app.
+- Mots de passe chiffrés par le **Keystore Android** (AES-256-GCM, clé non exportable).
+- Android 8.0 (API 26) ou plus récent.
+
+Installation : téléchargez `LEWEBMAX-MailMigrator-<version>.apk` depuis la page **Releases**,
+ouvrez-le sur le téléphone et autorisez l'installation depuis cette source.
+
+Compilation (nécessite `dotnet workload install maui-android`) :
+
+```bash
+dotnet publish src/MailMigrator.Mobile/MailMigrator.Mobile.csproj -c Release -f net10.0-android -o publish/android
+```
+
+Signature : la version Release est signée si les variables `ANDROID_KEYSTORE` (chemin du fichier
+`.keystore`, alias `lewebmax`) et `ANDROID_KEYSTORE_PASSWORD` sont définies. Sur GitHub, les secrets
+`ANDROID_KEYSTORE_BASE64` et `ANDROID_KEYSTORE_PASSWORD` remplissent ce rôle ; sans eux, l'APK de
+la CI est signé avec une clé de débogage (installable, mais incompatible avec les mises à jour signées).
+**Conservez précieusement la clé** : sans elle, impossible de publier une mise à jour de l'application.
+
 ## Installer l'application
 
 Lancez `LEWEBMAX-MailMigrator-Setup-<version>.exe` (voir « Créer l'installeur »).

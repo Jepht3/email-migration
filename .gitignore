@@ -18,3 +18,7 @@ logs/
 
 # Outils de test téléchargés
 tools/greenmail/*.jar
+
+# Clé de signature Android (jamais dans le dépôt)
+keys/
+*.keystore

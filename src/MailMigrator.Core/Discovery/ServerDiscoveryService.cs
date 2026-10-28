@@ -47,7 +47,30 @@ public sealed class ServerDiscoveryService(IEnumerable<IDiscoverySource> sources
 /// <summary>Résolution MX via DnsClient.NET.</summary>
 public sealed class DnsClientResolver : IDnsResolver
 {
-    private readonly LookupClient _client = new(new LookupClientOptions { Timeout = TimeSpan.FromSeconds(4), Retries = 1, UseCache = true });
+    private readonly LookupClient _client = Create();
+
+    /// <summary>
+    /// Serveurs DNS du système ; à défaut (Android ne les expose pas toujours), DNS publics
+    /// Cloudflare et Google.
+    /// </summary>
+    private static LookupClient Create()
+    {
+        try
+        {
+            var system = new LookupClient(new LookupClientOptions { Timeout = TimeSpan.FromSeconds(4), Retries = 1, UseCache = true });
+            if (system.NameServers.Count > 0) return system;
+        }
+        catch (Exception)
+        {
+            // Pas d'accès à la configuration réseau du système.
+        }
+        return new LookupClient(new LookupClientOptions(NameServer.Cloudflare, NameServer.GooglePublicDns)
+        {
+            Timeout = TimeSpan.FromSeconds(4),
+            Retries = 1,
+            UseCache = true,
+        });
+    }
 
     public async Task<IReadOnlyList<string>> GetMxHostsAsync(string domain, CancellationToken cancellationToken)
     {

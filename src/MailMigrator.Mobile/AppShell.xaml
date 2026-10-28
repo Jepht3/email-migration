@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:MailMigrator.Mobile.Pages"
+       x:Class="MailMigrator.Mobile.AppShell"
+       Shell.NavBarHasShadow="False"
+       Shell.BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"
+       Shell.ForegroundColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}"
+       Shell.TitleColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}"
+       Shell.TabBarBackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"
+       Shell.TabBarForegroundColor="{StaticResource Accent}"
+       Shell.TabBarTitleColor="{StaticResource Accent}"
+       Shell.TabBarUnselectedColor="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}">
+    <TabBar>
+        <ShellContent Route="migrations" Title="Migrations" Icon="tab_migrations.png"
+                      ContentTemplate="{DataTemplate pages:MigrationsPage}" />
+        <ShellContent Route="nouvelle" Title="Nouvelle" Icon="tab_new.png"
+                      ContentTemplate="{DataTemplate pages:NewMigrationPage}" />
+    </TabBar>
+</Shell>

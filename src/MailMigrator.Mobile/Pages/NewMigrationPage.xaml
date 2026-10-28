@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MailMigrator.Mobile.ViewModels"
+             xmlns:views="clr-namespace:MailMigrator.Mobile.Views"
+             x:Class="MailMigrator.Mobile.Pages.NewMigrationPage"
+             x:DataType="vm:NewMigrationViewModel"
+             Title="Nouvelle migration"
+             Shell.NavBarIsVisible="False">
+    <ScrollView>
+        <VerticalStackLayout Padding="16,24,16,24">
+            <Label Style="{StaticResource Title}" Text="Nouvelle migration" />
+            <Label Margin="0,2,0,16" Style="{StaticResource Caption}"
+                   Text="Le serveur est détecté automatiquement. Lancez plusieurs migrations : jusqu'à 5 tournent en même temps." />
+
+            <views:AccountEditorView BindingContext="{Binding Source}" />
+            <Label Text="↓" FontSize="28" HorizontalOptions="Center" TextColor="{StaticResource Accent}" Margin="0,-6,0,6" />
+            <views:AccountEditorView BindingContext="{Binding Destination}" />
+
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Style="{StaticResource CardTitle}" Text="Options" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout>
+                            <Label Text="Migrer la corbeille" FontAttributes="Bold" />
+                            <Label Style="{StaticResource Caption}" Text="Copie aussi les messages supprimés." />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" IsToggled="{Binding IncludeTrash}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout>
+                            <Label Text="Migrer les spams" FontAttributes="Bold" />
+                            <Label Style="{StaticResource Caption}" Text="Ignorés par défaut." />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" IsToggled="{Binding IncludeJunk}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout>
+                            <Label Text="Vérification finale" FontAttributes="Bold" />
+                            <Label Style="{StaticResource Caption}" Text="Recompte les messages des deux côtés." />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" IsToggled="{Binding VerifyAfterCopy}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout>
+                            <Label Text="Effacer les mots de passe à la fin" FontAttributes="Bold" />
+                            <Label Style="{StaticResource Caption}" Text="Ils sont chiffrés par le Keystore du téléphone." />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" IsToggled="{Binding ErasePasswords}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Démarrer la migration" Command="{Binding StartCommand}" Margin="0,4,0,0" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
