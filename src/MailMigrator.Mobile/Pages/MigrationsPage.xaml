@@ -18,8 +18,8 @@
                     <DataTemplate x:DataType="vm:JobItemViewModel">
                         <Border Style="{StaticResource Card}">
                             <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MigrationsViewModel}}, Path=OpenReportCommand}"
-                                                      CommandParameter="{Binding Id}" />
+                                <TapGestureRecognizer Command="{Binding OpenReportCommand}"
+ />
                             </Border.GestureRecognizers>
                             <VerticalStackLayout Spacing="8">
                                 <Grid ColumnDefinitions="40,*,Auto" ColumnSpacing="12">
@@ -76,8 +76,8 @@
                     <DataTemplate x:DataType="vm:HistoryItem">
                         <Border Style="{StaticResource Card}" Padding="14,12">
                             <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MigrationsViewModel}}, Path=OpenReportCommand}"
-                                                      CommandParameter="{Binding Id}" />
+                                <TapGestureRecognizer Command="{Binding OpenReportCommand}"
+ />
                             </Border.GestureRecognizers>
                             <VerticalStackLayout Spacing="2">
                                 <Label Style="{StaticResource CardTitle}" FontSize="15" Text="{Binding Title}" LineBreakMode="TailTruncation" />

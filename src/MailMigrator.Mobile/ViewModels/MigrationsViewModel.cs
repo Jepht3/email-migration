@@ -68,6 +68,8 @@ public sealed record HistoryItem(MigrationHistoryEntry Entry)
         JobStatus.Failed => Color.FromArgb("#DC2626"),
         _ => Color.FromArgb("#64748B"),
     };
+
+    public IAsyncRelayCommand OpenReportCommand { get; } = new AsyncRelayCommand(() => Shell.Current.GoToAsync($"report?id={Entry.Id}"));
 }
 
 /// <summary>Carte d'une migration en cours.</summary>
@@ -130,6 +132,9 @@ public sealed partial class JobItemViewModel(IMigrationJob job) : ObservableObje
         if (_buffer.LastOrDefault() is { } last)
             LastActivity = last.Subject is null ? last.Detail : $"{(last.Kind == Core.Progress.ActivityKind.Failed ? "✘" : "✔")} [{last.Folder}] {last.Subject}";
     }
+
+    [RelayCommand]
+    private Task OpenReportAsync() => Shell.Current.GoToAsync($"report?id={Id}");
 
     [RelayCommand]
     private void Pause() => Job.Pause();
