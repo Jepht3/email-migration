@@ -231,8 +231,15 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     {
         if (!IsLocalArchive && UsesOAuth && Endpoint is { } endpoint && !OAuthHostMatches(endpoint))
             throw new InvalidOperationException("Le serveur OAuth ne correspond pas au fournisseur de la boîte.");
-        return MailboxAuth.Create(IsLocalArchive ? OAuthProvider.None : AuthMethod, Secret ?? "",
-            value => _oauthCredentials = JsonSerializer.Deserialize<OAuthCredentials>(value));
+        var current = _oauthCredentials;
+        return MailboxAuth.Create(IsLocalArchive ? OAuthProvider.None : AuthMethod, Secret ?? "", value =>
+        {
+            if (ReferenceEquals(current, _oauthCredentials))
+            {
+                _oauthCredentials = JsonSerializer.Deserialize<OAuthCredentials>(value);
+                current = _oauthCredentials;
+            }
+        });
     }
 
     private bool _autoPath;
@@ -294,7 +301,11 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
         _suppressDetection = endpoint is not null;
         Email = email;
         _suppressDetection = false;
-        if (endpoint is not null) Apply(endpoint, ProviderCatalog.FromHost(endpoint.Host), "dernière sauvegarde");
+        if (endpoint is not null)
+        {
+            AuthMethod = endpoint.OAuthProvider;
+            Apply(endpoint, ProviderCatalog.FromHost(endpoint.Host), "dernière sauvegarde");
+        }
     }
 
     public void SetArchive(string path)
@@ -398,6 +409,7 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     {
         if (Secret is null)
         {
+            if (UsesOAuth) { OAuthError = "Connectez d’abord le compte avec le bouton OAuth."; return; }
             ApplyTestResult(ConnectionError.MissingPassword);
             return;
         }
@@ -405,6 +417,12 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
         {
             ShowAdvanced = true;
             ApplyTestResult(ConnectionError.HostUnreachable, "Serveur ou port invalide.");
+            return;
+        }
+
+        if (UsesOAuth && !OAuthHostMatches(endpoint))
+        {
+            OAuthError = "Utilisez le serveur sécurisé du fournisseur choisi.";
             return;
         }
 
