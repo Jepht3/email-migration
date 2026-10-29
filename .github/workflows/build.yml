@@ -30,6 +30,17 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      - name: Configuration OAuth du client Windows
+        shell: powershell
+        env:
+          GOOGLE_DESKTOP_CLIENT_JSON: ${{ secrets.GOOGLE_DESKTOP_CLIENT_JSON }}
+        run: |
+          if ($env:GOOGLE_DESKTOP_CLIENT_JSON) {
+            [IO.File]::WriteAllText((Join-Path $pwd 'src/MailMigrator.App/google-desktop-client.json'), $env:GOOGLE_DESKTOP_CLIENT_JSON)
+          } elseif ('${{ github.ref }}'.StartsWith('refs/tags/')) {
+            throw 'Configuration OAuth Google absente : distribution interrompue.'
+          }
+
       - name: Compilation
         run: dotnet build MailMigrator.sln -c Release
 

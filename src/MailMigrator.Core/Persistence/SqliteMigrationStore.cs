@@ -149,6 +149,12 @@ public sealed class SqliteMigrationStore : IMigrationStore, IDisposable
     public void ClearSecrets(Guid jobId) =>
         Execute("UPDATE jobs SET source_secret = NULL, destination_secret = NULL WHERE id = $id;", ("$id", jobId.ToString()));
 
+    public void UpdateSecret(Guid jobId, bool source, byte[] secret) =>
+        Execute(source
+            ? "UPDATE jobs SET source_secret = $secret WHERE id = $id AND source_secret IS NOT NULL;"
+            : "UPDATE jobs SET destination_secret = $secret WHERE id = $id AND destination_secret IS NOT NULL;",
+            ("$id", jobId.ToString()), ("$secret", secret));
+
     // ---------- Dossiers ----------
 
     public StoredFolder UpsertFolder(Guid jobId, string sourcePath, string destinationPath, SpecialFolder role, uint uidValidity)

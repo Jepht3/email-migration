@@ -22,3 +22,6 @@ tools/greenmail/*.jar
 # Clé de signature Android (jamais dans le dépôt)
 keys/
 *.keystore
+
+# Configuration du client OAuth de la distribution locale
+google-desktop-client.json

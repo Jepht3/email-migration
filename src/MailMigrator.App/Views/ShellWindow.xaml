@@ -18,10 +18,10 @@
 
         <ui:NavigationView x:Name="RootNavigation"
                            Grid.Row="1"
-                           PaneDisplayMode="Left"
+                           PaneDisplayMode="Top"
                            OpenPaneLength="248"
                            IsBackButtonVisible="Collapsed"
-                           IsPaneToggleVisible="True"
+                           IsPaneToggleVisible="False"
                            Transition="FadeInWithSlide"
                            TransitionDuration="200">
             <ui:NavigationView.PaneHeader>

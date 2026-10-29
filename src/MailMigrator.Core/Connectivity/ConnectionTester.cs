@@ -26,6 +26,7 @@ public sealed class ConnectionTester
 
     public async Task<ConnectionTestResult> TestAsync(ImapEndpoint endpoint, IAuthProvider auth, CancellationToken cancellationToken = default)
     {
+        OAuthEndpoints.ValidateMailbox(endpoint);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(DefaultTimeout);
         using var client = new ImapClient { Timeout = (int)DefaultTimeout.TotalMilliseconds };

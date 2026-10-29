@@ -9,7 +9,13 @@ public partial class HomePage : Page
     {
         DataContext = viewModel;
         InitializeComponent();
-        Loaded += (_, _) => viewModel.Refresh();
+        var refreshTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2)
+        };
+        refreshTimer.Tick += (_, _) => viewModel.Refresh();
+        Loaded += (_, _) => { viewModel.Refresh(); refreshTimer.Start(); };
+        Unloaded += (_, _) => refreshTimer.Stop();
     }
 }
 

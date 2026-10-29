@@ -2,6 +2,7 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.IO;
+using System.Text.Json;
 using MailMigrator.App.Services;
 using MailMigrator.Core.Archive;
 using MailMigrator.Core.Connectivity;
@@ -64,6 +65,75 @@ public sealed partial class AccountPairViewModel : ObservableObject
 /// <summary>Un côté d'une paire : adresse, mot de passe, serveur détecté, test de connexion.</summary>
 public sealed partial class AccountSideViewModel(string role, AccountServices services) : ObservableObject
 {
+    private OAuthCredentials? _oauthCredentials;
+    private CancellationTokenSource? _oauthCts;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UsesPassword), nameof(UsesOAuth), nameof(IsComplete), nameof(OAuthStatus))]
+    private OAuthProvider _authMethod;
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ConnectOAuthCommand))]
+    private bool _isConnectingOAuth;
+    [ObservableProperty] private string? _oAuthError;
+    public bool UsesPassword => AuthMethod == OAuthProvider.None;
+    public bool UsesOAuth => !UsesPassword;
+    public string OAuthStatus => _oauthCredentials is not null ? "Compte autorisé · connexion IMAP à vérifier" : "Connectez la boîte dans votre navigateur.";
+    public IReadOnlyList<AuthOption> AuthOptions { get; } =
+    [new(OAuthProvider.None, "Mot de passe"), new(OAuthProvider.Google, "Google / Gmail"), new(OAuthProvider.Microsoft, "Microsoft 365 / Outlook")];
+
+    partial void OnAuthMethodChanged(OAuthProvider value)
+    {
+        ResetOAuth();
+        if (value == OAuthProvider.None) return;
+        Password = "";
+        _discoveryCts?.Cancel();
+        var host = value == OAuthProvider.Google ? "imap.gmail.com" : "outlook.office365.com";
+        Apply(new ImapEndpoint(host, 993, SecurityMode.SslOnConnect, Email.Trim()), ProviderCatalog.FromHost(host), "connexion OAuth");
+    }
+
+    private void ResetOAuth()
+    {
+        _oauthCts?.Cancel();
+        _oauthCredentials = null;
+        OAuthError = null;
+        Test = TestState.NotTested;
+        OnPropertyChanged(nameof(IsComplete));
+        OnPropertyChanged(nameof(OAuthStatus));
+    }
+
+    private bool CanConnectOAuth() => !IsConnectingOAuth;
+
+    [RelayCommand(CanExecute = nameof(CanConnectOAuth))]
+    private async Task ConnectOAuthAsync()
+    {
+        if (!UsesOAuth || !Email.Contains('@')) { OAuthError = "Saisissez l’adresse de la boîte à connecter."; return; }
+        if (Endpoint is not { } endpoint || !OAuthHostMatches(endpoint))
+        { OAuthError = "Utilisez le serveur sécurisé du fournisseur choisi."; return; }
+        IsConnectingOAuth = true;
+        OAuthError = null;
+        using var cts = new CancellationTokenSource();
+        _oauthCts = cts;
+        try
+        {
+            var credential = await new OAuthSignIn().ConnectAsync(AuthMethod, Email.Trim(), cts.Token);
+            cts.Token.ThrowIfCancellationRequested();
+            _oauthCredentials = credential;
+            OnPropertyChanged(nameof(IsComplete));
+            OnPropertyChanged(nameof(OAuthStatus));
+            await TestAsync();
+        }
+        catch (OperationCanceledException) { OAuthError = "Connexion annulée ou délai dépassé. Vous pouvez réessayer."; }
+        catch (InvalidOperationException ex) { OAuthError = ex.Message; }
+        catch (Exception ex) when (ex is IOException or System.Net.Http.HttpRequestException or System.ComponentModel.Win32Exception or JsonException)
+        { OAuthError = "Connexion OAuth impossible. Vérifiez la configuration du fournisseur et réessayez."; }
+        finally { _oauthCts = null; IsConnectingOAuth = false; }
+    }
+
+    [RelayCommand]
+    private void CancelOAuth() => _oauthCts?.Cancel();
+
+    private bool OAuthHostMatches(ImapEndpoint endpoint) => endpoint.Security != SecurityMode.None
+        && endpoint.UserName.Equals(Email.Trim(), StringComparison.OrdinalIgnoreCase)
+        && endpoint.Host.Equals(AuthMethod == OAuthProvider.Google ? "imap.gmail.com" : "outlook.office365.com", StringComparison.OrdinalIgnoreCase);
     private CancellationTokenSource? _discoveryCts;
     private bool _suppressDetection;
     private IReadOnlyList<DiscoveryAttempt> _attempts = [];
@@ -105,7 +175,7 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     public bool IsTestOk => Test == TestState.Success;
     public bool IsTestFailed => Test == TestState.Failure;
     public bool IsUnencrypted => Security == SecurityMode.None;
-    public bool IsComplete => IsLocalArchive ? LocalPath.Trim().Length > 0 : Email.Contains('@') && Password.Length > 0;
+    public bool IsComplete => IsLocalArchive ? LocalPath.Trim().Length > 0 : Email.Contains('@') && (UsesPassword ? Password.Length > 0 : _oauthCredentials is not null);
 
     // ---------- Boîte email ou sauvegarde sur ce PC ----------
 
@@ -153,15 +223,24 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
         : Email.Trim();
 
     /// <summary>Ce qui sera chiffré et stocké pour la migration (rien pour une sauvegarde locale).</summary>
-    public string? Secret => IsLocalArchive ? "" : Password.Length > 0 ? Password : null;
+    public string? Secret => IsLocalArchive ? "" : UsesOAuth
+        ? _oauthCredentials is null ? null : JsonSerializer.Serialize(_oauthCredentials)
+        : Password.Length > 0 ? Password : null;
 
-    public IAuthProvider CreateAuth() => new PasswordAuthProvider(Secret ?? "");
+    public IAuthProvider CreateAuth()
+    {
+        if (!IsLocalArchive && UsesOAuth && Endpoint is { } endpoint && !OAuthHostMatches(endpoint))
+            throw new InvalidOperationException("Le serveur OAuth ne correspond pas au fournisseur de la boîte.");
+        return MailboxAuth.Create(IsLocalArchive ? OAuthProvider.None : AuthMethod, Secret ?? "",
+            value => _oauthCredentials = JsonSerializer.Deserialize<OAuthCredentials>(value));
+    }
 
     private bool _autoPath;
     private bool _settingAutoPath;
 
     partial void OnKindChanged(MailboxKind value)
     {
+        ResetOAuth();
         Test = TestState.NotTested;
         if (value == MailboxKind.LocalArchive && LocalPath.Length == 0 && IsDestination) SuggestPath();
         RefreshArchive();
@@ -238,18 +317,21 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
         ? (LocalPath.Trim().Length == 0 ? null : ImapEndpoint.LocalArchive(LocalPath.Trim(), ArchiveSummary?.Label ?? "", EncryptArchive))
         : string.IsNullOrWhiteSpace(Host) || !int.TryParse(Port, out var port) || port is <= 0 or > 65535
         ? null
-        : new ImapEndpoint(Host.Trim(), port, Security, string.IsNullOrWhiteSpace(UserName) ? Email.Trim() : UserName.Trim());
+        : new ImapEndpoint(Host.Trim(), port, Security, string.IsNullOrWhiteSpace(UserName) ? Email.Trim() : UserName.Trim()) { OAuthProvider = AuthMethod };
 
     partial void OnEmailChanged(string value)
     {
+        ResetOAuth();
+        if (UsesOAuth) { UserName = value.Trim(); return; }
         Test = TestState.NotTested;
         if (!_suppressDetection) _ = DetectAsync(value);
     }
 
     partial void OnPasswordChanged(string value) => Test = TestState.NotTested;
-    partial void OnHostChanged(string value) => Test = TestState.NotTested;
-    partial void OnPortChanged(string value) => Test = TestState.NotTested;
-    partial void OnSecurityChanged(SecurityMode value) => Test = TestState.NotTested;
+    partial void OnHostChanged(string value) => ResetOAuth();
+    partial void OnPortChanged(string value) => ResetOAuth();
+    partial void OnSecurityChanged(SecurityMode value) => ResetOAuth();
+    partial void OnUserNameChanged(string value) => ResetOAuth();
 
     /// <summary>Détection réelle : autoconfig → ISPDB → autodiscover → MX + préfixes.</summary>
     private async Task DetectAsync(string email)
@@ -314,7 +396,7 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     [RelayCommand(CanExecute = nameof(CanTest))]
     private async Task TestAsync()
     {
-        if (Password.Length == 0)
+        if (Secret is null)
         {
             ApplyTestResult(ConnectionError.MissingPassword);
             return;
@@ -327,7 +409,7 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
         }
 
         Test = TestState.Testing;
-        var result = await services.Tester.TestAsync(endpoint, new PasswordAuthProvider(Password));
+        var result = await services.Tester.TestAsync(endpoint, CreateAuth());
         ServerLabel = endpoint.Describe();
         TestSummary = result.Success
             ? $"{result.FolderCount} dossier(s){(result.SupportsSpecialUse ? " · SPECIAL-USE" : "")}"
@@ -396,3 +478,4 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
 }
 
 public sealed record SecurityOption(SecurityMode Mode, string Label);
+public sealed record AuthOption(OAuthProvider Provider, string Label);

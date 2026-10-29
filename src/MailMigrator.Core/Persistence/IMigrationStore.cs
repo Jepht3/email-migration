@@ -55,6 +55,7 @@ public interface IMigrationStore : IMigrationHistory
 
     (byte[]? Source, byte[]? Destination) GetSecrets(Guid jobId);
     void ClearSecrets(Guid jobId);
+    void UpdateSecret(Guid jobId, bool source, byte[] secret);
 
     /// <summary>Crée ou retrouve le dossier ; si l'UIDVALIDITY a changé, ses messages sont oubliés.</summary>
     StoredFolder UpsertFolder(Guid jobId, string sourcePath, string destinationPath, SpecialFolder role, uint uidValidity);

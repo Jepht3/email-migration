@@ -9,6 +9,7 @@ rapport final exportable, et sauvegarde sur le PC pour les changements de serveu
 ## Fonctionnalités
 
 **Migration directe boîte → boîte**
+- Windows : connexion Google et Microsoft dans le navigateur système (OAuth2 avec PKCE), renouvellement des jetons et reprise chiffrée. La disponibilité réelle dépend des autorisations et de la validation du fournisseur ; voir [état de configuration](docs/OAUTH-CONFIGURATION.md).
 - Saisie de 1 à 5 paires source → destination (ou import CSV : `source;mdp source;destination;mdp destination`).
 - Détection IMAP automatique : autoconfig du domaine → base ISPDB Thunderbird → autodiscover → enregistrements MX et préfixes `imap.` / `mail.` ; réglages modifiables à la main.
 - Test de connexion avec messages d'erreur en français (mot de passe refusé, mot de passe d'application requis, serveur injoignable, certificat, IMAP désactivé…).
@@ -161,6 +162,6 @@ logo dans `src/MailMigrator.App/Assets/Logo.xaml`, icône générée par `script
 
 Données de l'application : `%LOCALAPPDATA%\LEWEBMAX\MailMigrator` (`migrations.db`, `logs\`).
 
-## Hors périmètre de la V1
-- Connexion OAuth2 Gmail / Microsoft 365 (l'interface `IAuthProvider` est prête) : utiliser un mot de passe d'application.
+## Hors périmètre
+- OAuth2 dans la version Android (l’intégration actuelle concerne Windows).
 - Contacts et calendriers (CardDAV / CalDAV), source POP3.

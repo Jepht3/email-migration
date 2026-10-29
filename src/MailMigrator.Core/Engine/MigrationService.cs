@@ -40,8 +40,10 @@ public sealed class MigrationService(
 
         var engine = new MigrationEngine(store, connections, retry, logger);
         return await engine.RunAsync(job.Definition.Id,
-            new PasswordAuthProvider(secrets.Unprotect(source)),
-            new PasswordAuthProvider(secrets.Unprotect(destination)),
+            MailboxAuth.Create(job.Definition.Source?.OAuthProvider ?? OAuthProvider.None, secrets.Unprotect(source),
+                value => store.UpdateSecret(job.Definition.Id, true, secrets.Protect(value))),
+            MailboxAuth.Create(job.Definition.Destination?.OAuthProvider ?? OAuthProvider.None, secrets.Unprotect(destination),
+                value => store.UpdateSecret(job.Definition.Id, false, secrets.Protect(value))),
             job.Progress, job.PauseController, cancellationToken);
     }
 }

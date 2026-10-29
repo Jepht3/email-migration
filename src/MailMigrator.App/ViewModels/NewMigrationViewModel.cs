@@ -222,7 +222,7 @@ public sealed partial class NewMigrationViewModel : ObservableObject
                       : side.ArchiveStatusIsError ? "aucune sauvegarde trouvée dans ce dossier"
                       : null
                     : !side.Email.Contains('@') ? "adresse email invalide"
-                    : side.Password.Length == 0 ? "mot de passe manquant"
+                    : side.Secret is null ? "connexion manquante : saisissez le mot de passe ou connectez le compte OAuth"
                     : side.IsDetecting ? "détection du serveur en cours, patientez une seconde"
                     : side.Endpoint is null ? "serveur IMAP non renseigné (bouton « Modifier »)"
                     : null;

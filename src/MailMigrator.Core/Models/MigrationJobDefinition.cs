@@ -6,6 +6,7 @@ namespace MailMigrator.Core.Models;
 /// </summary>
 public sealed record ImapEndpoint(string Host, int Port, SecurityMode Security, string UserName)
 {
+    public Connectivity.OAuthProvider OAuthProvider { get; init; }
     /// <summary>Dossier de la sauvegarde locale ; null pour un serveur IMAP.</summary>
     public string? LocalArchivePath { get; init; }
 

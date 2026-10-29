@@ -30,6 +30,7 @@ public sealed class MailKitMailboxConnection(ImapEndpoint endpoint, IAuthProvide
 
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
+        OAuthEndpoints.ValidateMailbox(endpoint);
         if (_client is not null)
         {
             try { await _client.DisconnectAsync(false, CancellationToken.None); } catch { /* connexion déjà perdue */ }

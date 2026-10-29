@@ -23,6 +23,16 @@ public sealed partial class HomeViewModel : ObservableObject
 
     public RunningViewModel Running { get; }
 
+    public ObservableCollection<JobCardViewModel> ActiveJobs { get; } = [];
+    public ObservableCollection<MigrationHistoryEntry> Attention { get; } = [];
+
+    public void RefreshActivity()
+    {
+        var active = Running.Jobs.Where(j => !j.IsFinished).ToList();
+        foreach (var card in ActiveJobs.Except(active).ToList()) ActiveJobs.Remove(card);
+        foreach (var card in active.Except(ActiveJobs)) ActiveJobs.Add(card);
+    }
+
     public string Greeting => DateTime.Now.Hour switch
     {
         < 5 or >= 18 => "Bonsoir",
@@ -39,6 +49,8 @@ public sealed partial class HomeViewModel : ObservableObject
     public void Refresh()
     {
         var all = _history.GetAll();
+        RefreshActivity();
+        ReplaceIfChanged(Attention, all.Where(e => e.Status is JobStatus.CompletedWithErrors or JobStatus.Failed).Take(5));
         var done = all.Where(e => e.Status is JobStatus.Completed or JobStatus.CompletedWithErrors).ToList();
         MailboxesMigrated = done.Count;
         EmailsCopied = all.Sum(e => e.Copied);
@@ -46,8 +58,16 @@ public sealed partial class HomeViewModel : ObservableObject
         var source = all.Sum(e => e.SourceMessages);
         SuccessRate = source == 0 ? 1 : all.Sum(e => e.Copied + e.Skipped) / (double)source;
 
-        Recent.Clear();
-        foreach (var entry in all.Take(5)) Recent.Add(entry);
+        ReplaceIfChanged(Recent, all.Take(5));
+    }
+
+    private static void ReplaceIfChanged(ObservableCollection<MigrationHistoryEntry> target,
+        IEnumerable<MigrationHistoryEntry> entries)
+    {
+        var next = entries.ToList();
+        if (target.SequenceEqual(next)) return;
+        target.Clear();
+        foreach (var entry in next) target.Add(entry);
     }
 
     [RelayCommand]
@@ -58,6 +78,17 @@ public sealed partial class HomeViewModel : ObservableObject
 
     [RelayCommand]
     private void ShowHistory() => _navigation.Navigate(typeof(HistoryPage));
+
+    [RelayCommand]
+    private void ShowBackups() => _navigation.Navigate(typeof(BackupsPage));
+
+    [RelayCommand]
+    private void OpenJob(JobCardViewModel? job)
+    {
+        if (job is null) return;
+        Running.SelectedJob = job;
+        _navigation.Navigate(typeof(RunningPage));
+    }
 
     [RelayCommand]
     private void OpenReport(MigrationHistoryEntry? entry)

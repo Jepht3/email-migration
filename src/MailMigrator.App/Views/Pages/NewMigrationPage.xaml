@@ -61,8 +61,19 @@
                             Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"
                             AutomationProperties.Name="{Binding Role, StringFormat='Adresse email {0}'}" />
                 <ui:PasswordBox Margin="0,8,0,0" PlaceholderText="Mot de passe ou mot de passe d'application" Icon="{ui:SymbolIcon Key24}"
+                                Visibility="{Binding UsesPassword, Converter={StaticResource BoolToVisibility}}"
                                 Password="{Binding Password, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                 AutomationProperties.Name="{Binding Role, StringFormat='Mot de passe {0}'}" />
+                <ComboBox Margin="0,8,0,0" ItemsSource="{Binding AuthOptions}" DisplayMemberPath="Label" SelectedValuePath="Provider"
+                          SelectedValue="{Binding AuthMethod, Mode=TwoWay}" AutomationProperties.Name="Méthode de connexion" />
+                <StackPanel Margin="0,8,0,0" Visibility="{Binding UsesOAuth, Converter={StaticResource BoolToVisibility}}">
+                    <WrapPanel>
+                        <ui:Button Appearance="Primary" Command="{Binding ConnectOAuthCommand}" Content="Connecter le compte" />
+                        <ui:Button Margin="8,0,0,0" Command="{Binding CancelOAuthCommand}" Content="Annuler" Visibility="{Binding IsConnectingOAuth, Converter={StaticResource BoolToVisibility}}" />
+                    </WrapPanel>
+                    <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Caption}" Text="{Binding OAuthStatus}" TextWrapping="Wrap" />
+                    <TextBlock Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Status.Error}" Text="{Binding OAuthError}" TextWrapping="Wrap" />
+                </StackPanel>
 
                 <!-- Serveur détecté / squelette pendant la détection -->
                 <Grid Margin="0,12,0,0" MinHeight="28">
