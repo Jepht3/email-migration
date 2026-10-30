@@ -19,7 +19,7 @@ public sealed class StatusBadge : Border
         nameof(TextOverride), typeof(string), typeof(StatusBadge),
         new PropertyMetadata(null, (d, _) => ((StatusBadge)d).Update()));
 
-    private readonly SymbolIcon _icon = new() { FontSize = 14, Margin = new Thickness(0, 0, 6, 0) };
+    private readonly SymbolIcon _icon = new() { FontSize = 20, Filled = true, Margin = new Thickness(0, 0, 6, 0) };
     private readonly TextBlock _text = new() { FontSize = 12, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
 
     /// <summary><see cref="JobStatus"/>, <see cref="MessageStatus"/> ou <see cref="ActivityKind"/>.</summary>

@@ -82,9 +82,9 @@ public sealed partial class HistoryViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Open(MigrationHistoryEntry? entry)
+    private async Task OpenAsync(MigrationHistoryEntry? entry)
     {
-        if (entry is not null) _navigation.OpenReport(entry.Id);
+        if (entry is not null) await _navigation.OpenReportAsync(entry.Id);
     }
 
     [RelayCommand]

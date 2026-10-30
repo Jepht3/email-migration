@@ -16,10 +16,32 @@ public sealed class AppNavigation(IServiceProvider services)
 
     public void Navigate(Type pageType) => _view?.Navigate(pageType);
 
-    public void OpenReport(Guid jobId)
+    private bool _openingReport;
+
+    // Notification callbacks can start navigation without awaiting it;
+    // OpenReportAsync handles and logs load failures.
+    public void OpenReport(Guid jobId) => _ = OpenReportAsync(jobId);
+
+    public async Task OpenReportAsync(Guid jobId)
     {
-        services.GetRequiredService<ReportViewModel>().Load(jobId);
-        Navigate(typeof(ReportPage));
+        if (_openingReport) return;
+        _openingReport = true;
+        try
+        {
+            await services.GetRequiredService<ReportViewModel>().LoadAsync(jobId);
+            Navigate(typeof(ReportPage));
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "Impossible d'ouvrir le rapport {JobId}", jobId);
+            services.GetRequiredService<DialogService>().Notify("Rapport indisponible",
+                "Le rapport n'a pas pu être chargé. Consultez les journaux pour plus de détails.",
+                ControlAppearance.Danger, SymbolRegular.ErrorCircle24);
+        }
+        finally
+        {
+            _openingReport = false;
+        }
     }
 }
 

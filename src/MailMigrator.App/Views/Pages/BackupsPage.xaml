@@ -18,8 +18,8 @@
                            Text="Stockez une boîte sur ce PC, changez de serveur ou attendez la propagation DNS, puis restaurez les emails vers la nouvelle boîte. En complément de la migration directe d'une boîte à l'autre." />
             </StackPanel>
             <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal">
-                <ui:Button Appearance="Secondary" Command="{Binding AddExistingCommand}" Icon="{ui:SymbolIcon FolderOpen24}" Content="Ajouter une sauvegarde existante" />
-                <ui:Button Margin="8,0,0,0" Appearance="Primary" Command="{Binding NewBackupCommand}" Icon="{ui:SymbolIcon ArrowDownload24}" Content="Nouvelle sauvegarde" />
+                <ui:Button Appearance="Secondary" Command="{Binding AddExistingCommand}" Icon="{ui:SymbolIcon FolderOpen24, FontSize=22, Filled=True}" Content="Ajouter une sauvegarde existante" />
+                <ui:Button Margin="8,0,0,0" Appearance="Primary" Command="{Binding NewBackupCommand}" Icon="{ui:SymbolIcon ArrowDownload24, FontSize=22, Filled=True}" Content="Nouvelle sauvegarde" />
             </StackPanel>
         </Grid>
 
@@ -57,7 +57,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <Border Style="{StaticResource IconBubble}" Width="44" Height="44" CornerRadius="22" VerticalAlignment="Top">
-                                        <ui:SymbolIcon Symbol="Archive24" FontSize="22" Foreground="{DynamicResource Brush.Accent}" />
+                                        <ui:SymbolIcon Filled="True" Symbol="Archive24" FontSize="22" Foreground="{DynamicResource Brush.Accent}" />
                                     </Border>
                                     <StackPanel Grid.Column="1" Margin="14,0,16,0">
                                         <TextBlock Style="{StaticResource Text.CardTitle}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
@@ -65,7 +65,7 @@
                                         <WrapPanel Margin="0,8,0,0" Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisibility}}">
                                             <Border Style="{StaticResource Chip}" Margin="0,0,6,0" Padding="8,2">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <ui:SymbolIcon Symbol="LockClosed24" FontSize="12" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                                                    <ui:SymbolIcon Filled="True" Symbol="LockClosed24" FontSize="22" Foreground="{DynamicResource Brush.Text.Secondary}" />
                                                     <TextBlock Margin="4,0,0,0" Style="{StaticResource Text.Caption}" Text="{Binding FormatLabel}" />
                                                 </StackPanel>
                                             </Border>
@@ -80,22 +80,22 @@
                                             </Border>
                                         </WrapPanel>
                                         <StackPanel Margin="0,8,0,0" Orientation="Horizontal" Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}">
-                                            <ui:SymbolIcon Symbol="Warning24" FontSize="14" Foreground="{DynamicResource Brush.Status.Warning}" />
+                                            <ui:SymbolIcon Filled="True" Symbol="Warning24" FontSize="22" Foreground="{DynamicResource Brush.Status.Warning}" />
                                             <TextBlock Margin="6,0,0,0" Style="{StaticResource Text.Caption}" Text="Sauvegarde introuvable : le dossier a été déplacé ou supprimé." />
                                         </StackPanel>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal">
-                                        <ui:Button Appearance="Secondary" Icon="{ui:SymbolIcon ArrowSync24}" Content="Mettre à jour"
+                                        <ui:Button Appearance="Secondary" Icon="{ui:SymbolIcon ArrowSync24, FontSize=22, Filled=True}" Content="Mettre à jour"
                                                    ToolTip="Récupérer les nouveaux emails de la boîte d'origine"
                                                    Command="{Binding DataContext.UpdateCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}"
                                                    IsEnabled="{Binding IsAvailable}" />
-                                        <ui:Button Margin="8,0,0,0" Appearance="Primary" Icon="{ui:SymbolIcon ArrowUpload24}" Content="Restaurer vers une boîte"
+                                        <ui:Button Margin="8,0,0,0" Appearance="Primary" Icon="{ui:SymbolIcon ArrowUpload24, FontSize=22, Filled=True}" Content="Restaurer vers une boîte"
                                                    Command="{Binding DataContext.RestoreCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}"
                                                    IsEnabled="{Binding IsAvailable}" />
-                                        <ui:Button Margin="8,0,0,0" Appearance="Transparent" Padding="8" Icon="{ui:SymbolIcon FolderOpen24}" ToolTip="Ouvrir le dossier"
+                                        <ui:Button Margin="8,0,0,0" Appearance="Transparent" Padding="8" Icon="{ui:SymbolIcon FolderOpen24, FontSize=22, Filled=True}" ToolTip="Ouvrir le dossier"
                                                    AutomationProperties.Name="Ouvrir le dossier"
                                                    Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" />
-                                        <ui:Button Appearance="Transparent" Padding="8" Icon="{ui:SymbolIcon Delete24}" ToolTip="Supprimer la sauvegarde"
+                                        <ui:Button Appearance="Transparent" Padding="8" Icon="{ui:SymbolIcon Delete24, FontSize=22, Filled=True}" ToolTip="Supprimer la sauvegarde"
                                                    AutomationProperties.Name="Supprimer la sauvegarde"
                                                    Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" />
                                     </StackPanel>
@@ -108,12 +108,12 @@
                 <!-- État vide -->
                 <StackPanel Margin="0,48" HorizontalAlignment="Center" Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
                     <Border Width="88" Height="88" CornerRadius="44" HorizontalAlignment="Center" Background="{DynamicResource Brush.AccentSoft}">
-                        <ui:SymbolIcon Symbol="Archive24" FontSize="40" Foreground="{DynamicResource Brush.Accent}" />
+                        <ui:SymbolIcon Filled="True" Symbol="Archive24" FontSize="40" Foreground="{DynamicResource Brush.Accent}" />
                     </Border>
                     <TextBlock Margin="0,18,0,6" HorizontalAlignment="Center" Style="{StaticResource Text.SectionTitle}" Text="Aucune sauvegarde sur ce PC" />
                     <TextBlock HorizontalAlignment="Center" Style="{StaticResource Text.BodySecondary}" Text="Sauvegardez une boîte avant un changement de serveur, puis restaurez-la quand le DNS est prêt." />
                     <ui:Button Margin="0,18,0,0" HorizontalAlignment="Center" Appearance="Primary" Command="{Binding NewBackupCommand}"
-                               Icon="{ui:SymbolIcon ArrowDownload24}" Content="Nouvelle sauvegarde" />
+                               Icon="{ui:SymbolIcon ArrowDownload24, FontSize=22, Filled=True}" Content="Nouvelle sauvegarde" />
                 </StackPanel>
             </Grid>
         </ScrollViewer>

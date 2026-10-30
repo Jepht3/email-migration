@@ -1,4 +1,4 @@
-﻿<Page x:Class="MailMigrator.App.Views.Pages.SettingsPage"
+<Page x:Class="MailMigrator.App.Views.Pages.SettingsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -50,7 +50,7 @@
                                 <Grid Height="64">
                                     <Border CornerRadius="6" Background="{StaticResource Brush.Preview.Light}" />
                                     <Border Margin="50,0,0,0" CornerRadius="0,6,6,0" Background="{StaticResource Brush.Preview.Dark}" />
-                                    <ui:SymbolIcon Symbol="Desktop24" FontSize="24" Foreground="{StaticResource Brush.Preview.Icon}" />
+                                    <ui:SymbolIcon Filled="True" Symbol="Desktop24" FontSize="24" Foreground="{StaticResource Brush.Preview.Icon}" />
                                 </Grid>
                                 <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}" Text="Système" />
                             </StackPanel>
@@ -59,7 +59,7 @@
                                      IsChecked="{Binding ThemeChoice, Converter={StaticResource EqualsTo}, ConverterParameter=Light}">
                             <StackPanel>
                                 <Border Height="64" CornerRadius="6" Background="{StaticResource Brush.Preview.Light}">
-                                    <ui:SymbolIcon Symbol="WeatherSunny24" FontSize="24" Foreground="{StaticResource Brush.Preview.Sun}" />
+                                    <ui:SymbolIcon Filled="True" Symbol="WeatherSunny24" FontSize="24" Foreground="{StaticResource Brush.Preview.Sun}" />
                                 </Border>
                                 <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}" Text="Clair" />
                             </StackPanel>
@@ -68,7 +68,7 @@
                                      IsChecked="{Binding ThemeChoice, Converter={StaticResource EqualsTo}, ConverterParameter=Dark}">
                             <StackPanel>
                                 <Border Height="64" CornerRadius="6" Background="{StaticResource Brush.Preview.Dark}">
-                                    <ui:SymbolIcon Symbol="WeatherMoon24" FontSize="24" Foreground="{StaticResource Brush.Preview.Moon}" />
+                                    <ui:SymbolIcon Filled="True" Symbol="WeatherMoon24" FontSize="24" Foreground="{StaticResource Brush.Preview.Moon}" />
                                 </Border>
                                 <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}" Text="Sombre" />
                             </StackPanel>
@@ -94,7 +94,7 @@
                                             <Grid Width="40" Height="40">
                                                 <Ellipse x:Name="Ring" StrokeThickness="2" Stroke="Transparent" />
                                                 <Ellipse Margin="5" Fill="{Binding Brush}" />
-                                                <ui:SymbolIcon x:Name="Tick" Symbol="Checkmark16" FontSize="16" Foreground="{DynamicResource Brush.OnAccent}" Visibility="Collapsed" />
+                                                <ui:SymbolIcon Filled="True" x:Name="Tick" Symbol="Checkmark16" FontSize="22" Foreground="{DynamicResource Brush.OnAccent}" Visibility="Collapsed" />
                                             </Grid>
                                             <ControlTemplate.Triggers>
                                                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
@@ -147,7 +147,7 @@
                             <TextBlock Style="{StaticResource Text.BodyStrong}" Text="Dossier des rapports" />
                             <TextBlock Margin="0,2,0,0" Style="{StaticResource Text.Caption}" Text="{Binding ReportsFolder}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ReportsFolder}" />
                         </StackPanel>
-                        <ui:Button Grid.Column="1" Appearance="Secondary" Command="{Binding BrowseReportsCommand}" Icon="{ui:SymbolIcon FolderOpen24}" Content="Parcourir…" />
+                        <ui:Button Grid.Column="1" Appearance="Secondary" Command="{Binding BrowseReportsCommand}" Icon="{ui:SymbolIcon FolderOpen24, FontSize=22, Filled=True}" Content="Parcourir…" />
                     </Grid>
 
                     <Border Margin="0,16" Style="{StaticResource Divider}" />
@@ -175,14 +175,14 @@
                                     IsChecked="{Binding ErasePasswords, Mode=TwoWay}" />
                     <Border Margin="0,8,0,0" Style="{StaticResource Inset}">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="18" Foreground="{DynamicResource Brush.Status.Success}" />
+                            <ui:SymbolIcon Filled="True" Symbol="ShieldCheckmark24" FontSize="22" Foreground="{DynamicResource Brush.Status.Success}" />
                             <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Caption}" TextWrapping="Wrap"
                                        Text="Les mots de passe sont chiffrés avec DPAPI (liés à votre session Windows) et n'apparaissent jamais dans les journaux." />
                         </StackPanel>
                     </Border>
                     <Border Margin="0,8,0,0" Style="{StaticResource Inset}" Visibility="{Binding AnimationsDisabledBySystem, Converter={StaticResource BoolToVisibility}}">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Info24" FontSize="18" Foreground="{DynamicResource Brush.Status.Info}" />
+                            <ui:SymbolIcon Filled="True" Symbol="Info24" FontSize="22" Foreground="{DynamicResource Brush.Status.Info}" />
                             <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Caption}"
                                        Text="Les effets d'animation sont désactivés dans Windows : l'application les respecte." />
                         </StackPanel>

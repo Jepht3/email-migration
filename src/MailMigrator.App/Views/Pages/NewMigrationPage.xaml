@@ -1,4 +1,4 @@
-﻿<Page x:Class="MailMigrator.App.Views.Pages.NewMigrationPage"
+<Page x:Class="MailMigrator.App.Views.Pages.NewMigrationPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -34,14 +34,14 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <ui:TextBox PlaceholderText="Dossier de la sauvegarde" Icon="{ui:SymbolIcon Archive24}"
+                        <ui:TextBox PlaceholderText="Dossier de la sauvegarde" Icon="{ui:SymbolIcon Archive24, FontSize=22, Filled=True}"
                                     Text="{Binding LocalPath, UpdateSourceTrigger=PropertyChanged, Delay=300}" AutomationProperties.Name="Dossier de la sauvegarde" />
                         <ui:Button Grid.Column="1" Margin="8,0,0,0" Appearance="Secondary" Command="{Binding BrowseArchiveCommand}"
-                                   Icon="{ui:SymbolIcon FolderOpen24}" Content="Parcourir…" />
+                                   Icon="{ui:SymbolIcon FolderOpen24, FontSize=22, Filled=True}" Content="Parcourir…" />
                     </Grid>
                     <Border Margin="0,8,0,0" Padding="10,8" CornerRadius="8" Background="{DynamicResource Brush.Status.InfoSoft}">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon x:Name="ArchiveIcon" Symbol="Info24" FontSize="16" VerticalAlignment="Top" Foreground="{DynamicResource Brush.Status.Info}" />
+                            <ui:SymbolIcon Filled="True" x:Name="ArchiveIcon" Symbol="Info24" FontSize="22" VerticalAlignment="Top" Foreground="{DynamicResource Brush.Status.Info}" />
                             <TextBlock Margin="8,0,0,0" MaxWidth="460" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource Brush.Text.Primary}"
                                        TextWrapping="Wrap" Text="{Binding ArchiveStatus}" />
                         </StackPanel>
@@ -57,10 +57,10 @@
 
                 <!-- Boîte email -->
                 <StackPanel Visibility="{Binding IsMailbox, Converter={StaticResource BoolToVisibility}}">
-                <ui:TextBox PlaceholderText="adresse@domaine.fr" Icon="{ui:SymbolIcon Mail24}"
+                <ui:TextBox PlaceholderText="adresse@domaine.fr" Icon="{ui:SymbolIcon Mail24, FontSize=22, Filled=True}"
                             Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"
                             AutomationProperties.Name="{Binding Role, StringFormat='Adresse email {0}'}" />
-                <ui:PasswordBox Margin="0,8,0,0" PlaceholderText="Mot de passe ou mot de passe d'application" Icon="{ui:SymbolIcon Key24}"
+                <ui:PasswordBox Margin="0,8,0,0" PlaceholderText="Mot de passe ou mot de passe d'application" Icon="{ui:SymbolIcon Key24, FontSize=22, Filled=True}"
                                 Visibility="{Binding UsesPassword, Converter={StaticResource BoolToVisibility}}"
                                 Password="{Binding Password, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                 AutomationProperties.Name="{Binding Role, StringFormat='Mot de passe {0}'}" />
@@ -68,7 +68,7 @@
                           SelectedValue="{Binding AuthMethod, Mode=TwoWay}" AutomationProperties.Name="Méthode de connexion" />
                 <StackPanel Margin="0,8,0,0" Visibility="{Binding UsesOAuth, Converter={StaticResource BoolToVisibility}}">
                     <WrapPanel>
-                        <ui:Button Appearance="Primary" Command="{Binding ConnectOAuthCommand}" Content="Connecter le compte" />
+                        <ui:Button Appearance="Primary" Command="{Binding ConnectOAuthCommand}" Content="{Binding OAuthButtonLabel}" />
                         <ui:Button Margin="8,0,0,0" Command="{Binding CancelOAuthCommand}" Content="Annuler" Visibility="{Binding IsConnectingOAuth, Converter={StaticResource BoolToVisibility}}" />
                     </WrapPanel>
                     <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Caption}" Text="{Binding OAuthStatus}" TextWrapping="Wrap" />
@@ -99,7 +99,7 @@
                             </TextBlock>
                         </StackPanel>
                         <ui:Button Grid.Column="2" Appearance="Transparent" Padding="8,4" FontSize="12" Command="{Binding ToggleAdvancedCommand}"
-                                   Content="Modifier" Icon="{ui:SymbolIcon Edit16}" ToolTip="Modifier les paramètres du serveur" />
+                                   Content="Modifier" Icon="{ui:SymbolIcon Edit16, FontSize=22, Filled=True}" ToolTip="Modifier les paramètres du serveur" />
                     </Grid>
                     <Grid Visibility="{Binding IsDetectionFailed, Converter={StaticResource BoolToVisibility}}">
                         <Grid.ColumnDefinitions>
@@ -107,13 +107,13 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <ui:SymbolIcon Symbol="Warning24" FontSize="18" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Status.Warning}" />
+                        <ui:SymbolIcon Filled="True" Symbol="Warning24" FontSize="22" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Status.Warning}" />
                         <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
                             <TextBlock Style="{StaticResource Text.CaptionStrong}" Text="Serveur non détecté automatiquement" />
                             <TextBlock Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Text="Vérifiez les paramètres proposés ci-dessous (fournis par votre hébergeur)." />
                         </StackPanel>
                         <ui:Button Grid.Column="2" Appearance="Transparent" Padding="8,4" FontSize="12" Command="{Binding ShowDetailsCommand}"
-                                   Content="Détail" Icon="{ui:SymbolIcon Info16}" ToolTip="Voir les tentatives de détection" />
+                                   Content="Détail" Icon="{ui:SymbolIcon Info16, FontSize=22, Filled=True}" ToolTip="Voir les tentatives de détection" />
                     </Grid>
                 </Grid>
 
@@ -128,7 +128,7 @@
                             <ui:TextBox PlaceholderText="Serveur IMAP" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Serveur IMAP" />
                             <ui:TextBox Grid.Column="1" Margin="8,0,0,0" PlaceholderText="Port" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Port" />
                         </Grid>
-                        <ui:TextBox Margin="0,8,0,0" PlaceholderText="Identifiant (souvent l'adresse email)" Icon="{ui:SymbolIcon Person24}"
+                        <ui:TextBox Margin="0,8,0,0" PlaceholderText="Identifiant (souvent l'adresse email)" Icon="{ui:SymbolIcon Person24, FontSize=22, Filled=True}"
                                     Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Identifiant de connexion" />
                         <ComboBox Margin="0,8,0,0" ItemsSource="{Binding SecurityOptions}" DisplayMemberPath="Label"
                                   SelectedValuePath="Mode" SelectedValue="{Binding Security}" AutomationProperties.Name="Chiffrement" />
@@ -143,13 +143,13 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <ui:Button Appearance="Secondary" Command="{Binding TestCommand}" Icon="{ui:SymbolIcon PlugConnected24}" Content="Tester la connexion" />
+                    <ui:Button Appearance="Secondary" Command="{Binding TestCommand}" Icon="{ui:SymbolIcon PlugConnected24, FontSize=22, Filled=True}" Content="Tester la connexion" />
                     <ui:ProgressRing Grid.Column="1" Margin="12,0,0,0" Width="18" Height="18" IsIndeterminate="True" HorizontalAlignment="Left"
                                      Visibility="{Binding IsTesting, Converter={StaticResource BoolToVisibility}}" />
                     <Border Grid.Column="1" Margin="12,0,0,0" HorizontalAlignment="Left" Visibility="{Binding IsTestOk, Converter={StaticResource BoolToVisibility}}"
                             CornerRadius="999" Padding="8,4,10,4" Background="{DynamicResource Brush.Status.SuccessSoft}">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="CheckmarkCircle24" Filled="True" FontSize="16" Foreground="{DynamicResource Brush.Status.Success}" />
+                            <ui:SymbolIcon Symbol="CheckmarkCircle24" Filled="True" FontSize="22" Foreground="{DynamicResource Brush.Status.Success}" />
                             <TextBlock Margin="6,0,0,0" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Status.Success}" Text="Connexion OK" />
                             <TextBlock Margin="6,0,0,0" FontSize="12" Foreground="{DynamicResource Brush.Status.Success}" Text="{Binding TestSummary, StringFormat='· {0}'}"
                                        Visibility="{Binding TestSummary, Converter={StaticResource HasValueToVisibility}}" />
@@ -158,7 +158,7 @@
                     <Border Grid.Column="1" Margin="12,0,0,0" HorizontalAlignment="Left" Visibility="{Binding IsTestFailed, Converter={StaticResource BoolToVisibility}}"
                             CornerRadius="999" Padding="8,4,10,4" Background="{DynamicResource Brush.Status.ErrorSoft}">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="ErrorCircle24" Filled="True" FontSize="16" Foreground="{DynamicResource Brush.Status.Error}" />
+                            <ui:SymbolIcon Symbol="ErrorCircle24" Filled="True" FontSize="22" Foreground="{DynamicResource Brush.Status.Error}" />
                             <TextBlock Margin="6,0,0,0" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Status.Error}" Text="{Binding Error.Title}" />
                         </StackPanel>
                     </Border>
@@ -169,7 +169,7 @@
                         <TextBlock Style="{StaticResource Text.Paragraph}" FontSize="12" LineHeight="17" Foreground="{DynamicResource Brush.Text.Primary}" Text="{Binding Error.Explanation}" />
                         <StackPanel Margin="-8,4,0,-4" Orientation="Horizontal">
                             <ui:Button Padding="8,2" Appearance="Transparent" FontSize="12" Foreground="{DynamicResource Brush.Accent}"
-                                       Command="{Binding ErrorActionCommand}" Content="{Binding Error.ActionLabel}" Icon="{ui:SymbolIcon ArrowRight16}" />
+                                       Command="{Binding ErrorActionCommand}" Content="{Binding Error.ActionLabel}" Icon="{ui:SymbolIcon ArrowRight16, FontSize=22, Filled=True}" />
                             <ui:Button Padding="8,2" Appearance="Transparent" FontSize="12" Foreground="{DynamicResource Brush.Text.Secondary}"
                                        Command="{Binding ShowDetailsCommand}" Content="Voir le détail technique"
                                        Visibility="{Binding TechnicalDetail, Converter={StaticResource HasValueToVisibility}}" />
@@ -220,7 +220,7 @@
                             <Grid>
                                 <TextBlock x:Name="Number" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"
                                            Foreground="{DynamicResource Brush.Text.Secondary}" Text="{Binding Number}" />
-                                <ui:SymbolIcon x:Name="Check" Symbol="Checkmark16" FontSize="16" Visibility="Collapsed" Foreground="{DynamicResource Brush.OnAccent}" />
+                                <ui:SymbolIcon Filled="True" x:Name="Check" Symbol="Checkmark16" FontSize="22" Visibility="Collapsed" Foreground="{DynamicResource Brush.OnAccent}" />
                             </Grid>
                         </Border>
                         <StackPanel Grid.Column="1" Margin="12,0,16,0" VerticalAlignment="Center">
@@ -266,9 +266,9 @@
                     </Border>
                 </StackPanel>
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                    <ui:Button Appearance="Secondary" Command="{Binding ImportCsvCommand}" Icon="{ui:SymbolIcon DocumentTable24}" Content="Importer un CSV"
+                    <ui:Button Appearance="Secondary" Command="{Binding ImportCsvCommand}" Icon="{ui:SymbolIcon DocumentTable24, FontSize=22, Filled=True}" Content="Importer un CSV"
                                ToolTip="Colonnes : source ; mot de passe source ; destination ; mot de passe destination" />
-                    <ui:Button Margin="8,0,0,0" Appearance="Secondary" Command="{Binding AddPairCommand}" Icon="{ui:SymbolIcon Add24}" Content="Ajouter une boîte" />
+                    <ui:Button Margin="8,0,0,0" Appearance="Secondary" Command="{Binding AddPairCommand}" Icon="{ui:SymbolIcon Add24, FontSize=22, Filled=True}" Content="Ajouter une boîte" />
                 </StackPanel>
             </Grid>
 
@@ -295,7 +295,7 @@
                                                 </TextBlock>
                                             </StackPanel>
                                             <ui:Button HorizontalAlignment="Right" Appearance="Transparent" Padding="6" Command="{Binding RemoveCommand}"
-                                                       Icon="{ui:SymbolIcon Delete24}" ToolTip="Retirer cette boîte" AutomationProperties.Name="Retirer cette boîte" />
+                                                       Icon="{ui:SymbolIcon Delete24, FontSize=22, Filled=True}" ToolTip="Retirer cette boîte" AutomationProperties.Name="Retirer cette boîte" />
                                         </Grid>
                                         <Grid Grid.Row="1" Margin="20,8,20,20">
                                             <Grid.ColumnDefinitions>
@@ -321,7 +321,7 @@
                             <MouseBinding Gesture="LeftClick" Command="{Binding AddPairCommand}" />
                         </Border.InputBindings>
                         <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="AddCircle24" FontSize="20" Foreground="{DynamicResource Brush.Accent}" />
+                            <ui:SymbolIcon Filled="True" Symbol="AddCircle24" FontSize="22" Foreground="{DynamicResource Brush.Accent}" />
                             <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.BodyStrong}" Foreground="{DynamicResource Brush.Accent}" Text="Ajouter une boîte (jusqu'à 5)" />
                         </StackPanel>
                     </Border>
@@ -371,7 +371,7 @@
                                             IsChecked="{Binding VerifyAfterCopy, Mode=TwoWay}" />
 
                             <TextBlock Margin="0,12,0,6" Style="{StaticResource Text.BodyStrong}" Text="Dossiers à exclure" />
-                            <ui:TextBox PlaceholderText="ex. Archives/Ancien, Newsletters" Icon="{ui:SymbolIcon FolderProhibited24}"
+                            <ui:TextBox PlaceholderText="ex. Archives/Ancien, Newsletters" Icon="{ui:SymbolIcon FolderProhibited24, FontSize=22, Filled=True}"
                                         Text="{Binding ExcludedFolders, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Dossiers à exclure" />
                             <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Caption}" Text="Séparez les dossiers par des virgules. Les sous-dossiers sont exclus aussi." />
                         </StackPanel>
@@ -401,7 +401,7 @@
                         <Border Margin="0,0,0,12" Padding="12,10" CornerRadius="8" Background="{DynamicResource Brush.Status.ErrorSoft}"
                                 Visibility="{Binding FolderPreviewError, Converter={StaticResource HasValueToVisibility}}">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="18" VerticalAlignment="Top" Foreground="{DynamicResource Brush.Status.Error}" />
+                                <ui:SymbolIcon Filled="True" Symbol="ErrorCircle24" FontSize="22" VerticalAlignment="Top" Foreground="{DynamicResource Brush.Status.Error}" />
                                 <TextBlock Margin="8,0,0,0" MaxWidth="560" Style="{StaticResource Text.Paragraph}" FontSize="12" Foreground="{DynamicResource Brush.Text.Primary}"
                                            Text="{Binding FolderPreviewError}" />
                             </StackPanel>
@@ -433,13 +433,13 @@
                                             <CheckBox IsChecked="{Binding Included}" MinWidth="0" ToolTip="Inclure ce dossier"
                                                       AutomationProperties.Name="{Binding Source, StringFormat='Inclure {0}'}" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <ui:SymbolIcon Symbol="{Binding Role, Converter={StaticResource FolderSymbol}}" FontSize="16" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                                                <ui:SymbolIcon Filled="True" Symbol="{Binding Role, Converter={StaticResource FolderSymbol}}" FontSize="22" Foreground="{DynamicResource Brush.Text.Secondary}" />
                                                 <StackPanel Margin="8,0,0,0">
                                                     <TextBlock Style="{StaticResource Text.Body}" Text="{Binding Source}" />
                                                     <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding MessageCount, Converter={StaticResource Number}, StringFormat='{}{0} messages'}" />
                                                 </StackPanel>
                                             </StackPanel>
-                                            <ui:SymbolIcon Grid.Column="2" Symbol="ArrowRight16" FontSize="14" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                                            <ui:SymbolIcon Filled="True" Grid.Column="2" Symbol="ArrowRight16" FontSize="22" Foreground="{DynamicResource Brush.Text.Secondary}" />
                                             <ComboBox Grid.Column="3" IsEditable="True" Text="{Binding Destination}"
                                                       ItemsSource="{Binding DataContext.DestinationFolders, RelativeSource={RelativeSource AncestorType=Page}}"
                                                       AutomationProperties.Name="{Binding Source, StringFormat='Destination de {0}'}" />
@@ -476,7 +476,7 @@
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <Border Style="{StaticResource IconBubble}" Width="48" Height="48" CornerRadius="24">
-                            <ui:SymbolIcon Symbol="Rocket24" FontSize="24" Foreground="{DynamicResource Brush.Accent}" />
+                            <ui:SymbolIcon Filled="True" Symbol="Rocket24" FontSize="24" Foreground="{DynamicResource Brush.Accent}" />
                         </Border>
                         <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
                             <TextBlock Style="{StaticResource Text.SectionTitle}" Text="Tout est prêt" />
@@ -507,13 +507,13 @@
                                         <TextBlock Style="{StaticResource Text.BodyStrong}" Text="{Binding Source.Email}" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding Source.ServerLabel}" />
                                     </StackPanel>
-                                    <ui:SymbolIcon Grid.Column="2" Symbol="ArrowRight24" FontSize="18" Foreground="{DynamicResource Brush.Accent}" />
+                                    <ui:SymbolIcon Filled="True" Grid.Column="2" Symbol="ArrowRight24" FontSize="22" Foreground="{DynamicResource Brush.Accent}" />
                                     <StackPanel Grid.Column="3" Margin="12,0" VerticalAlignment="Center">
                                         <TextBlock Style="{StaticResource Text.BodyStrong}" Text="{Binding Destination.Email}" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding Destination.ServerLabel}" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <ui:SymbolIcon x:Name="Icon" Symbol="Warning24" FontSize="16" Foreground="{DynamicResource Brush.Status.Warning}" />
+                                        <ui:SymbolIcon Filled="True" x:Name="Icon" Symbol="Warning24" FontSize="22" Foreground="{DynamicResource Brush.Status.Warning}" />
                                         <TextBlock x:Name="Label" Margin="6,0,0,0" Style="{StaticResource Text.Caption}" Text="Connexion non testée" />
                                     </StackPanel>
                                 </Grid>
@@ -555,24 +555,24 @@
 
                     <Border Margin="0,12,0,24" Padding="14,12" CornerRadius="8" Background="{DynamicResource Brush.Status.SuccessSoft}">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="20" Foreground="{DynamicResource Brush.Status.Success}" />
+                            <ui:SymbolIcon Filled="True" Symbol="ShieldCheckmark24" FontSize="22" Foreground="{DynamicResource Brush.Status.Success}" />
                             <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Body}" TextWrapping="Wrap"
                                        Text="Connexions chiffrées TLS · mots de passe chiffrés DPAPI · aucun doublon, même en relançant la migration." />
                         </StackPanel>
                     </Border>
 
                     <ui:Button HorizontalAlignment="Left" Appearance="Primary" Padding="28,12" FontSize="15" Command="{Binding StartCommand}"
-                               Icon="{ui:SymbolIcon Play24}" Content="Démarrer la migration" AutomationProperties.Name="Démarrer la migration" />
+                               Icon="{ui:SymbolIcon Play24, FontSize=22, Filled=True}" Content="Démarrer la migration" AutomationProperties.Name="Démarrer la migration" />
                 </StackPanel>
             </Border>
         </ScrollViewer>
 
         <!-- Barre d'actions -->
         <Grid Grid.Row="3" Margin="0,16,0,0">
-            <ui:Button Appearance="Secondary" Command="{Binding BackCommand}" Icon="{ui:SymbolIcon ArrowLeft24}" Content="Retour"
+            <ui:Button Appearance="Secondary" Command="{Binding BackCommand}" Icon="{ui:SymbolIcon ArrowLeft24, FontSize=22, Filled=True}" Content="Retour"
                        Visibility="{Binding IsFirstStep, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}" />
             <ui:Button HorizontalAlignment="Right" Appearance="Primary" Padding="20,8" Command="{Binding NextCommand}"
-                       Content="{Binding NextLabel}" Icon="{ui:SymbolIcon ArrowRight24}"
+                       Content="{Binding NextLabel}" Icon="{ui:SymbolIcon ArrowRight24, FontSize=22, Filled=True}"
                        Visibility="{Binding IsLastStep, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}" />
         </Grid>
     </Grid>

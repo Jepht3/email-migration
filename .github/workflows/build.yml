@@ -47,6 +47,9 @@ jobs:
       - name: Tests unitaires
         run: dotnet test tests/MailMigrator.Tests -c Release --no-build --logger "trx;LogFileName=unitaires.trx"
 
+      - name: Tests de sélection Google et Microsoft (Windows)
+        run: dotnet run --project tests/MailMigrator.App.SmokeTests -c Release
+
       - name: Tests d'intégration (serveur IMAP GreenMail)
         shell: powershell
         run: |
