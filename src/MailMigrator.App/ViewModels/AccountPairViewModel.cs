@@ -68,7 +68,7 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     private OAuthCredentials? _oauthCredentials;
     private CancellationTokenSource? _oauthCts;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(UsesPassword), nameof(UsesOAuth), nameof(IsComplete), nameof(OAuthStatus))]
+    [NotifyPropertyChangedFor(nameof(UsesPassword), nameof(UsesOAuth), nameof(IsComplete), nameof(OAuthStatus), nameof(OAuthButtonLabel))]
     private OAuthProvider _authMethod;
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectOAuthCommand))]
@@ -76,6 +76,12 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     [ObservableProperty] private string? _oAuthError;
     public bool UsesPassword => AuthMethod == OAuthProvider.None;
     public bool UsesOAuth => !UsesPassword;
+    public string OAuthButtonLabel => AuthMethod switch
+    {
+        OAuthProvider.Google => "Se connecter avec Google",
+        OAuthProvider.Microsoft => "Se connecter avec Microsoft",
+        _ => "Connecter le compte",
+    };
     public string OAuthStatus => _oauthCredentials is not null ? "Compte autorisé · connexion IMAP à vérifier" : "Connectez la boîte dans votre navigateur.";
     public IReadOnlyList<AuthOption> AuthOptions { get; } =
     [new(OAuthProvider.None, "Mot de passe"), new(OAuthProvider.Google, "Google / Gmail"), new(OAuthProvider.Microsoft, "Microsoft 365 / Outlook")];
@@ -83,9 +89,9 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     partial void OnAuthMethodChanged(OAuthProvider value)
     {
         ResetOAuth();
+        _discoveryCts?.Cancel();
         if (value == OAuthProvider.None) return;
         Password = "";
-        _discoveryCts?.Cancel();
         var host = value == OAuthProvider.Google ? "imap.gmail.com" : "outlook.office365.com";
         Apply(new ImapEndpoint(host, 993, SecurityMode.SslOnConnect, Email.Trim()), ProviderCatalog.FromHost(host), "connexion OAuth");
     }
@@ -333,9 +339,19 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
     partial void OnEmailChanged(string value)
     {
         ResetOAuth();
-        if (UsesOAuth) { UserName = value.Trim(); return; }
         Test = TestState.NotTested;
-        if (!_suppressDetection) _ = DetectAsync(value);
+        if (_suppressDetection) return;
+        _discoveryCts?.Cancel();
+        UserName = value.Trim();
+        var known = ProviderCatalog.FromEmail(value.Trim())?.KnownEndpoint;
+        var suggested = ProviderCatalog.OAuthForHost(known?.Host);
+        AuthMethod = suggested;
+        if (suggested != OAuthProvider.None)
+        {
+            Apply(known! with { UserName = value.Trim() }, ProviderCatalog.FromEmail(value.Trim()), "fournisseur reconnu");
+            return;
+        }
+        _ = DetectAsync(value);
     }
 
     partial void OnPasswordChanged(string value) => Test = TestState.NotTested;
@@ -365,6 +381,7 @@ public sealed partial class AccountSideViewModel(string role, AccountServices se
             if (outcome.Server is { } server)
             {
                 Apply(server.Endpoint, server.Provider, SourceText(server.Source));
+                AuthMethod = ProviderCatalog.OAuthForHost(server.Endpoint.Host);
                 return;
             }
             var domain = email.Split('@').Last();

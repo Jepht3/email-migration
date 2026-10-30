@@ -68,7 +68,7 @@
                           SelectedValue="{Binding AuthMethod, Mode=TwoWay}" AutomationProperties.Name="Méthode de connexion" />
                 <StackPanel Margin="0,8,0,0" Visibility="{Binding UsesOAuth, Converter={StaticResource BoolToVisibility}}">
                     <WrapPanel>
-                        <ui:Button Appearance="Primary" Command="{Binding ConnectOAuthCommand}" Content="Connecter le compte" />
+                        <ui:Button Appearance="Primary" Command="{Binding ConnectOAuthCommand}" Content="{Binding OAuthButtonLabel}" />
                         <ui:Button Margin="8,0,0,0" Command="{Binding CancelOAuthCommand}" Content="Annuler" Visibility="{Binding IsConnectingOAuth, Converter={StaticResource BoolToVisibility}}" />
                     </WrapPanel>
                     <TextBlock Margin="0,6,0,0" Style="{StaticResource Text.Caption}" Text="{Binding OAuthStatus}" TextWrapping="Wrap" />

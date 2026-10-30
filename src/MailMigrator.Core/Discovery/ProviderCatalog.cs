@@ -1,4 +1,5 @@
 using MailMigrator.Core.Models;
+using MailMigrator.Core.Connectivity;
 
 namespace MailMigrator.Core.Discovery;
 
@@ -12,6 +13,14 @@ public sealed record MailProvider(string Key, string Name, string Monogram, stri
 /// </summary>
 public static class ProviderCatalog
 {
+    /// <summary>OAuth is suggested only for the providers' canonical IMAP hosts.</summary>
+    public static OAuthProvider OAuthForHost(string? host) => host?.Trim().ToLowerInvariant() switch
+    {
+        "imap.gmail.com" => OAuthProvider.Google,
+        "outlook.office365.com" => OAuthProvider.Microsoft,
+        _ => OAuthProvider.None,
+    };
+
     private static readonly (string[] Domains, MailProvider Provider)[] Known =
     [
         (["gmail.com", "googlemail.com"], new("gmail", "Gmail", "G", "#EA4335", Ep("imap.gmail.com"))),

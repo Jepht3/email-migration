@@ -3,7 +3,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Version>0.10.2</Version>
+    <Version>0.10.3</Version>
     <Company>LEWEBMAX</Company>
     <Product>LEWEBMAX Mail Migrator</Product>
     <Copyright>© LEWEBMAX</Copyright>
