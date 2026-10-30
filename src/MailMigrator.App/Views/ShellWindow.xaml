@@ -1,4 +1,4 @@
-﻿<ui:FluentWindow x:Class="MailMigrator.App.Views.ShellWindow"
+<ui:FluentWindow x:Class="MailMigrator.App.Views.ShellWindow"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -10,7 +10,46 @@
                  WindowBackdropType="Mica"
                  WindowCornerPreference="Round"
                  FontFamily="{StaticResource Font.Text}">
-    <Grid>
+    <ui:FluentWindow.Resources>
+        <Style x:Key="Navigation.Pill" TargetType="ui:NavigationViewItem">
+            <Setter Property="Foreground" Value="#665780" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="4,8" />
+            <Setter Property="Padding" Value="16,13" />
+            <Setter Property="MinHeight" Value="48" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ui:NavigationViewItem">
+                        <Border x:Name="Pill" Background="Transparent" CornerRadius="16" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ContentPresenter Content="{TemplateBinding Icon}" VerticalAlignment="Center" Margin="0,0,9,0" />
+                                <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="#EAE1FF" />
+                                <Setter Property="Foreground" Value="#5623BB" />
+                            </Trigger>
+                            <Trigger Property="IsActive" Value="True">
+                                <Setter Property="Foreground" Value="White" />
+                                <Setter TargetName="Pill" Property="Background">
+                                    <Setter.Value><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#6324DF" Offset="0" /><GradientStop Color="#8A52ED" Offset="1" /></LinearGradientBrush></Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="Pill" Property="BorderBrush" Value="#AC85F7" />
+                                <Setter TargetName="Pill" Property="BorderThickness" Value="2" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ui:FluentWindow.Resources>
+    <Grid Background="#F6F2FF">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -23,37 +62,37 @@
                            IsBackButtonVisible="Collapsed"
                            IsPaneToggleVisible="False"
                            Transition="FadeInWithSlide"
-                           TransitionDuration="200">
+                           TransitionDuration="200" Background="#F6F2FF">
             <ui:NavigationView.PaneHeader>
-                <StackPanel Margin="14,4,12,16" Orientation="Horizontal">
-                    <Image Width="32" Height="32" Source="{StaticResource Logo.Mark}" />
+                <StackPanel Margin="24,10,24,10" Orientation="Horizontal">
+                    <Border Width="44" Height="44" CornerRadius="14" Background="#E8DCFF"><Image Width="30" Height="30" Source="{StaticResource Logo.Mark}" /></Border>
                     <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Style="{StaticResource Text.CardTitle}" Text="LEWEBMAX" />
-                        <TextBlock Style="{StaticResource Text.Caption}" Text="Mail Migrator" />
+                        <TextBlock FontSize="17" FontWeight="Bold" Foreground="#38205C" Text="LEWEBMAX" />
+                        <TextBlock FontSize="12" Foreground="#8B76A8" Text="Mail Migrator" />
                     </StackPanel>
                 </StackPanel>
             </ui:NavigationView.PaneHeader>
 
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="Accueil" TargetPageType="{x:Type pages:HomePage}"
-                                       ToolTip="Accueil" Icon="{ui:SymbolIcon Home24}" />
-                <ui:NavigationViewItem Content="Nouvelle migration" TargetPageType="{x:Type pages:NewMigrationPage}"
-                                       ToolTip="Nouvelle migration" Icon="{ui:SymbolIcon AddCircle24}" />
-                <ui:NavigationViewItem Content="Migrations en cours" TargetPageType="{x:Type pages:RunningPage}"
-                                       ToolTip="Migrations en cours" Icon="{ui:SymbolIcon ArrowSync24}" />
-                <ui:NavigationViewItem Content="Historique" TargetPageType="{x:Type pages:HistoryPage}"
-                                       ToolTip="Historique" Icon="{ui:SymbolIcon History24}" />
-                <ui:NavigationViewItem Content="Sauvegardes locales" TargetPageType="{x:Type pages:BackupsPage}"
-                                       ToolTip="Sauvegardes locales" Icon="{ui:SymbolIcon Archive24}" />
+                <ui:NavigationViewItem Style="{StaticResource Navigation.Pill}" Content="Accueil" TargetPageType="{x:Type pages:HomePage}"
+                                       ToolTip="Accueil" Icon="{ui:SymbolIcon Home24, FontSize=22, Filled=True}" />
+                <ui:NavigationViewItem Style="{StaticResource Navigation.Pill}" Content="Nouvelle migration" TargetPageType="{x:Type pages:NewMigrationPage}"
+                                       ToolTip="Nouvelle migration" Icon="{ui:SymbolIcon AddCircle24, FontSize=22, Filled=True}" />
+                <ui:NavigationViewItem Style="{StaticResource Navigation.Pill}" Content="En cours" TargetPageType="{x:Type pages:RunningPage}"
+                                       ToolTip="Migrations en cours" Icon="{ui:SymbolIcon ArrowSync24, FontSize=22, Filled=True}" />
+                <ui:NavigationViewItem Style="{StaticResource Navigation.Pill}" Content="Historique" TargetPageType="{x:Type pages:HistoryPage}"
+                                       ToolTip="Historique" Icon="{ui:SymbolIcon History24, FontSize=22, Filled=True}" />
+                <ui:NavigationViewItem Style="{StaticResource Navigation.Pill}" Content="Sauvegardes" TargetPageType="{x:Type pages:BackupsPage}"
+                                       ToolTip="Sauvegardes locales" Icon="{ui:SymbolIcon Archive24, FontSize=22, Filled=True}" />
             </ui:NavigationView.MenuItems>
 
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="Paramètres" TargetPageType="{x:Type pages:SettingsPage}"
-                                       ToolTip="Paramètres" Icon="{ui:SymbolIcon Settings24}" />
+                <ui:NavigationViewItem Style="{StaticResource Navigation.Pill}" Content="Paramètres" TargetPageType="{x:Type pages:SettingsPage}"
+                                       ToolTip="Paramètres" Icon="{ui:SymbolIcon Settings24, FontSize=22, Filled=True}" />
             </ui:NavigationView.FooterMenuItems>
 
             <ui:NavigationView.PaneFooter>
-                <TextBlock x:Name="VersionText" Margin="16,4,16,12" Style="{StaticResource Text.Caption}" />
+                <TextBlock x:Name="VersionText" Margin="16,4,16,12" FontSize="11" Foreground="#9585AB" />
             </ui:NavigationView.PaneFooter>
 
             <ui:NavigationView.ContentOverlay>
@@ -61,7 +100,7 @@
             </ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
 
-        <ui:TitleBar x:Name="AppTitleBar" Grid.Row="0" Title="LEWEBMAX Mail Migrator">
+        <ui:TitleBar x:Name="AppTitleBar" Grid.Row="0" Title="LEWEBMAX Mail Migrator" Background="#F6F2FF" Foreground="#79688E">
             <ui:TitleBar.Icon>
                 <ui:ImageIcon Source="{StaticResource Logo.Mark}" />
             </ui:TitleBar.Icon>

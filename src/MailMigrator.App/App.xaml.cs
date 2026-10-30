@@ -58,6 +58,14 @@ public partial class App : Application
         return true;
     }
 
+    private void OnSymbolIconLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Wpf.Ui.Controls.SymbolIcon icon) return;
+        icon.FontSize = Math.Max(22, icon.FontSize);
+        icon.MinWidth = Math.Max(22, icon.MinWidth);
+        icon.MinHeight = Math.Max(22, icon.MinHeight);
+        icon.Filled = true;
+    }
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);

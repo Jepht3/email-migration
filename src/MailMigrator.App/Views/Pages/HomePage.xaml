@@ -4,30 +4,103 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:c="clr-namespace:MailMigrator.App.Controls"
       Title="Accueil">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="{StaticResource Space.PagePadding}" MaxWidth="1400">
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="/Themes/Colors.Light.xaml" /></ResourceDictionary.MergedDictionaries>
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="#FFFEFF" />
+                <Setter Property="CornerRadius" Value="20" />
+                <Setter Property="Padding" Value="22" />
+                <Setter Property="Effect"><Setter.Value><DropShadowEffect Color="#260D67" BlurRadius="24" ShadowDepth="7" Opacity="0.18" /></Setter.Value></Setter>
+            </Style>
+            <Style x:Key="Tile" TargetType="Border" BasedOn="{StaticResource Card}" />
+        </ResourceDictionary>
+    </Page.Resources>
+    <Border>
+        <Border.Background>
+
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#4810D5" Offset="0" /><GradientStop Color="#7138EC" Offset="0.6" /><GradientStop Color="#8754F2" Offset="1" /></LinearGradientBrush>
+        </Border.Background>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalContentAlignment="Stretch">
+        <StackPanel Margin="32,28,32,36" MaxWidth="1500">
 
             <!-- Bienvenue -->
-            <TextBlock Style="{StaticResource Text.PageTitle}">
+            <TextBlock Style="{StaticResource Text.PageTitle}" Foreground="White" FontSize="32">
                 <Run Text="{Binding Greeting, Mode=OneWay}" /><Run Text=", bienvenue" />
             </TextBlock>
-            <TextBlock Margin="0,4,0,24" Style="{StaticResource Text.BodySecondary}"
+            <TextBlock Margin="0,4,0,24" Foreground="#E6DBFF" TextWrapping="Wrap" Style="{StaticResource Text.BodySecondary}"
                        Text="Migrez des boîtes email IMAP d'un serveur à l'autre, en toute sécurité, jusqu'à 5 en parallèle." />
 
+            <Grid Margin="0,0,0,28">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="24" /><ColumnDefinition Width="330" /></Grid.ColumnDefinitions>
+                <ItemsControl>
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><c:AdaptiveGrid MinItemWidth="230" MaxColumns="2" Spacing="16" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <Border Style="{StaticResource Tile}" MinHeight="158">
+                    <StackPanel>
+                        <Border Style="{StaticResource IconBubble}" HorizontalAlignment="Left">
+                            <ui:SymbolIcon Filled="True" Symbol="MailMultiple24" FontSize="22" Foreground="{DynamicResource Brush.Accent}" />
+                        </Border>
+                        <c:AnimatedNumber Margin="0,12,0,0" Style="{StaticResource Text.Number}" Value="{Binding MailboxesMigrated}" />
+                        <TextBlock Style="{StaticResource Text.Caption}" Text="Boîtes migrées" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" MinHeight="158">
+                    <StackPanel>
+                        <Border Style="{StaticResource IconBubble}" HorizontalAlignment="Left" Background="{DynamicResource Brush.Status.SuccessSoft}">
+                            <ui:SymbolIcon Filled="True" Symbol="MailInboxCheckmark24" FontSize="22" Foreground="{DynamicResource Brush.Status.Success}" />
+                        </Border>
+                        <c:AnimatedNumber Margin="0,12,0,0" Style="{StaticResource Text.Number}" Value="{Binding EmailsCopied}" />
+                        <TextBlock Style="{StaticResource Text.Caption}" Text="Emails copiés" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" MinHeight="158">
+                    <StackPanel>
+                        <Border Style="{StaticResource IconBubble}" HorizontalAlignment="Left" Background="{DynamicResource Brush.Status.InfoSoft}">
+                            <ui:SymbolIcon Filled="True" Symbol="DataUsage24" FontSize="22" Foreground="{DynamicResource Brush.Status.Info}" />
+                        </Border>
+                        <c:AnimatedNumber Margin="0,12,0,0" Style="{StaticResource Text.Number}" Format="Bytes" Value="{Binding TotalBytes}" />
+                        <TextBlock Style="{StaticResource Text.Caption}" Text="Volume total migré" />
+                    </StackPanel>
+                </Border>
+                    <Border Style="{StaticResource Tile}" MinHeight="158" Background="#EEE8FF">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Caption}" Text="TRANSFERTS ACTIFS" />
+                            <TextBlock Margin="0,16,0,8" FontSize="36" FontWeight="SemiBold" Foreground="#5927CC" Text="{Binding ActiveJobs.Count}" />
+                            <TextBlock Style="{StaticResource Text.Paragraph}" Text="Jusqu’à 5 boîtes en parallèle" />
+                        </StackPanel>
+                    </Border>
+                </ItemsControl>
+                <Border Grid.Column="2" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Text.CardTitle}" Text="Qualité du transfert" />
+                        <TextBlock Margin="0,6,0,16" Style="{StaticResource Text.Paragraph}" Text="Messages copiés ou déjà présents" />
+                        <Grid Width="224" Height="224" HorizontalAlignment="Center">
+                            <c:ProgressGauge Thickness="15" Value="{Binding SuccessRate}" TrackBrush="#EDEAF4" StartColor="#854CFA" EndColor="#36C5DA" />
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <c:AnimatedNumber HorizontalAlignment="Center" FontSize="42" FontWeight="SemiBold" Foreground="#EF9067" Format="Percent" Value="{Binding SuccessRate}" />
+                                <TextBlock Margin="0,5,0,0" HorizontalAlignment="Center" Style="{StaticResource Text.Caption}" Text="Taux de réussite" />
+                            </StackPanel>
+                        </Grid>
+                        <Border Margin="0,18,0,0" Padding="12" CornerRadius="10" Background="#F3F0FA">
+                            <TextBlock Style="{StaticResource Text.Paragraph}" Text="Consultez les rapports pour vérifier les résultats de chaque boîte." />
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
             <!-- Les actions principales sont accessibles au centre du dashboard. -->
             <ItemsControl Margin="0,0,0,24">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><c:AdaptiveGrid MinItemWidth="280" MaxColumns="3" Spacing="16" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                <Border Style="{StaticResource Card}" Background="{DynamicResource Brush.Hero}">
+                <Border Style="{StaticResource Card}" Background="#F0E9FF">
                     <StackPanel>
-                        <ui:SymbolIcon Symbol="MailMultiple24" HorizontalAlignment="Left" FontSize="28" Foreground="{DynamicResource Brush.Accent}" />
+                        <ui:SymbolIcon Filled="True" Symbol="MailMultiple24" HorizontalAlignment="Left" FontSize="28" Foreground="{DynamicResource Brush.Accent}" />
                         <TextBlock Margin="0,14,0,8" Style="{StaticResource Text.CardTitle}" Text="Migrer des boîtes" />
                         <TextBlock Style="{StaticResource Text.Paragraph}" Text="Transférez jusqu'à 5 boîtes en parallèle, avec reprise et sans doublon." />
-                        <ui:Button Margin="0,20,0,0" Appearance="Primary" Command="{Binding NewMigrationCommand}" Icon="{ui:SymbolIcon Add24}" Content="Nouvelle migration" />
+                        <ui:Button Margin="0,20,0,0" Appearance="Primary" Command="{Binding NewMigrationCommand}" Icon="{ui:SymbolIcon Add24, FontSize=22, Filled=True}" Content="Nouvelle migration" />
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <ui:SymbolIcon Symbol="Archive24" HorizontalAlignment="Left" FontSize="28" Foreground="{DynamicResource Brush.Accent}" />
+                        <ui:SymbolIcon Filled="True" Symbol="Archive24" HorizontalAlignment="Left" FontSize="28" Foreground="{DynamicResource Brush.Accent}" />
                         <TextBlock Margin="0,14,0,8" Style="{StaticResource Text.CardTitle}" Text="Sauvegarder et restaurer" />
                         <TextBlock Style="{StaticResource Text.Paragraph}" Text="Conservez une copie locale et restaurez vos emails sur le nouveau serveur." />
                         <ui:Button Margin="0,20,0,0" Command="{Binding ShowBackupsCommand}" Content="Gérer les sauvegardes" />
@@ -35,7 +108,7 @@
                 </Border>
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <ui:SymbolIcon Symbol="History24" HorizontalAlignment="Left" FontSize="28" Foreground="{DynamicResource Brush.Accent}" />
+                        <ui:SymbolIcon Filled="True" Symbol="History24" HorizontalAlignment="Left" FontSize="28" Foreground="{DynamicResource Brush.Accent}" />
                         <TextBlock Margin="0,14,0,8" Style="{StaticResource Text.CardTitle}" Text="Vérifier les résultats" />
                         <TextBlock Style="{StaticResource Text.Paragraph}" Text="Consultez les rapports, examinez les écarts et réessayez les messages en échec." />
                         <ui:Button Margin="0,20,0,0" Command="{Binding ShowHistoryCommand}" Content="Historique et rapports" />
@@ -46,9 +119,9 @@
             <StackPanel Margin="0,0,0,24">
                 <DockPanel Margin="0,0,0,12">
                     <ui:Button DockPanel.Dock="Right" HorizontalAlignment="Right" Command="{Binding ShowRunningCommand}" Content="Tout le suivi" />
-                    <TextBlock Style="{StaticResource Text.SectionTitle}" Text="Migrations en cours" />
+                    <TextBlock Style="{StaticResource Text.SectionTitle}" Foreground="White" Text="Migrations en cours" />
                 </DockPanel>
-                <TextBlock Margin="0,0,0,12" Style="{StaticResource Text.BodySecondary}" Text="Aucune migration en cours. Lancez un transfert pour suivre sa progression ici."
+                <TextBlock Margin="0,0,0,12" Style="{StaticResource Text.BodySecondary}" Foreground="#E6DBFF" Text="Aucune migration en cours. Lancez un transfert pour suivre sa progression ici."
                            Visibility="{Binding ActiveJobs.Count, Converter={StaticResource HasValueToVisibility}, ConverterParameter=invert}" />
                 <ItemsControl ItemsSource="{Binding ActiveJobs}">
                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><c:AdaptiveGrid MinItemWidth="360" MaxColumns="3" Spacing="16" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -73,7 +146,7 @@
                 </ItemsControl>
             </StackPanel>
             <StackPanel Margin="0,0,0,24" Visibility="{Binding Attention.Count, Converter={StaticResource HasValueToVisibility}}">
-                <TextBlock Margin="0,0,0,12" Style="{StaticResource Text.SectionTitle}" Text="À vérifier" />
+                <TextBlock Margin="0,0,0,12" Style="{StaticResource Text.SectionTitle}" Foreground="White" Text="À vérifier" />
                 <ItemsControl ItemsSource="{Binding Attention}">
                     <ItemsControl.ItemTemplate><DataTemplate>
                         <Border Style="{StaticResource Card}" Margin="0,0,0,8">
@@ -85,51 +158,11 @@
                     </DataTemplate></ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
-            <!-- Statistiques -->
-            <UniformGrid Columns="4" Margin="-8,0,-8,24">
-                <Border Style="{StaticResource Tile}" Margin="8,0">
-                    <StackPanel>
-                        <Border Style="{StaticResource IconBubble}" HorizontalAlignment="Left">
-                            <ui:SymbolIcon Symbol="MailMultiple24" FontSize="20" Foreground="{DynamicResource Brush.Accent}" />
-                        </Border>
-                        <c:AnimatedNumber Margin="0,12,0,0" Style="{StaticResource Text.Number}" Value="{Binding MailboxesMigrated}" />
-                        <TextBlock Style="{StaticResource Text.Caption}" Text="Boîtes migrées" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Tile}" Margin="8,0">
-                    <StackPanel>
-                        <Border Style="{StaticResource IconBubble}" HorizontalAlignment="Left" Background="{DynamicResource Brush.Status.SuccessSoft}">
-                            <ui:SymbolIcon Symbol="MailInboxCheckmark24" FontSize="20" Foreground="{DynamicResource Brush.Status.Success}" />
-                        </Border>
-                        <c:AnimatedNumber Margin="0,12,0,0" Style="{StaticResource Text.Number}" Value="{Binding EmailsCopied}" />
-                        <TextBlock Style="{StaticResource Text.Caption}" Text="Emails copiés" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Tile}" Margin="8,0">
-                    <StackPanel>
-                        <Border Style="{StaticResource IconBubble}" HorizontalAlignment="Left" Background="{DynamicResource Brush.Status.InfoSoft}">
-                            <ui:SymbolIcon Symbol="DataUsage24" FontSize="20" Foreground="{DynamicResource Brush.Status.Info}" />
-                        </Border>
-                        <c:AnimatedNumber Margin="0,12,0,0" Style="{StaticResource Text.Number}" Format="Bytes" Value="{Binding TotalBytes}" />
-                        <TextBlock Style="{StaticResource Text.Caption}" Text="Volume total migré" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Tile}" Margin="8,0">
-                    <StackPanel>
-                        <Border Style="{StaticResource IconBubble}" HorizontalAlignment="Left" Background="{DynamicResource Brush.Status.WarningSoft}">
-                            <ui:SymbolIcon Symbol="Trophy24" FontSize="20" Foreground="{DynamicResource Brush.Status.Warning}" />
-                        </Border>
-                        <c:AnimatedNumber Margin="0,12,0,0" Style="{StaticResource Text.Number}" Format="Percent" Value="{Binding SuccessRate}" />
-                        <TextBlock Style="{StaticResource Text.Caption}" Text="Taux de réussite" />
-                    </StackPanel>
-                </Border>
-            </UniformGrid>
-
             <!-- Dernières migrations -->
             <Grid Margin="0,0,0,12">
-                <TextBlock Style="{StaticResource Text.SectionTitle}" Text="Dernières migrations" />
-                <ui:Button HorizontalAlignment="Right" Appearance="Transparent" Command="{Binding ShowHistoryCommand}"
-                           Content="Tout l'historique" Icon="{ui:SymbolIcon ChevronRight24}" />
+                <TextBlock Style="{StaticResource Text.SectionTitle}" Foreground="White" Text="Dernières migrations" />
+                <ui:Button HorizontalAlignment="Right" Appearance="Secondary" Command="{Binding ShowHistoryCommand}"
+                           Content="Tout l'historique" Icon="{ui:SymbolIcon ChevronRight24, FontSize=22, Filled=True}" />
             </Grid>
             <Border Style="{StaticResource Card}" Padding="8">
                 <Grid>
@@ -158,7 +191,7 @@
                                         <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
                                             <TextBlock Style="{StaticResource Text.BodyStrong}" Text="{Binding SourceEmail}" TextTrimming="CharacterEllipsis" />
                                             <StackPanel Orientation="Horizontal">
-                                                <ui:SymbolIcon Symbol="ArrowRight16" FontSize="12" Margin="0,0,4,0" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                                                <ui:SymbolIcon Filled="True" Symbol="ArrowRight16" FontSize="22" Margin="0,0,4,0" Foreground="{DynamicResource Brush.Text.Secondary}" />
                                                 <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding DestinationEmail}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
                                         </StackPanel>
@@ -170,7 +203,7 @@
                                             <c:StatusBadge Status="{Binding Status}" />
                                             <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Caption}" Text="{Binding StartedAt, Converter={StaticResource Date}, ConverterParameter=long}" />
                                         </StackPanel>
-                                        <ui:SymbolIcon Grid.Column="4" Symbol="ChevronRight24" FontSize="16" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                                        <ui:SymbolIcon Filled="True" Grid.Column="4" Symbol="ChevronRight24" FontSize="22" Foreground="{DynamicResource Brush.Text.Secondary}" />
                                     </Grid>
                                 </Border>
                                 <DataTemplate.Triggers>
@@ -186,7 +219,7 @@
                     <StackPanel Margin="0,32" HorizontalAlignment="Center"
                                 Visibility="{Binding Recent.Count, Converter={StaticResource HasValueToVisibility}, ConverterParameter=invert}">
                         <Border Width="72" Height="72" CornerRadius="36" Background="{DynamicResource Brush.AccentSoft}">
-                            <ui:SymbolIcon Symbol="MailInbox24" FontSize="32" Foreground="{DynamicResource Brush.Accent}" />
+                            <ui:SymbolIcon Filled="True" Symbol="MailInbox24" FontSize="32" Foreground="{DynamicResource Brush.Accent}" />
                         </Border>
                         <TextBlock Margin="0,16,0,4" HorizontalAlignment="Center" Style="{StaticResource Text.CardTitle}" Text="Lancez votre première migration" />
                         <TextBlock HorizontalAlignment="Center" Style="{StaticResource Text.BodySecondary}" Text="Les migrations terminées apparaîtront ici avec leur rapport." />
@@ -195,4 +228,5 @@
             </Border>
         </StackPanel>
     </ScrollViewer>
+    </Border>
 </Page>

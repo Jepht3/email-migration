@@ -58,9 +58,9 @@ public sealed class ScreenshotTour(IServiceProvider services, ShellWindow shell)
             running.CloseDetailCommand.Execute(null);
             await Task.Delay(400);
 
-            navigation.OpenReport(success.Id);
+            await navigation.OpenReportAsync(success.Id);
             await Shot(folder, $"07-rapport-{suffix}", 1400);
-            navigation.OpenReport(withErrors.Id);
+            await navigation.OpenReportAsync(withErrors.Id);
             await Shot(folder, $"08-rapport-avec-erreurs-{suffix}", 1000);
 
             navigation.Navigate(typeof(HistoryPage));

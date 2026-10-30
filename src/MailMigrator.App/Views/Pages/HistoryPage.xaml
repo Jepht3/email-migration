@@ -1,4 +1,4 @@
-﻿<Page x:Class="MailMigrator.App.Views.Pages.HistoryPage"
+<Page x:Class="MailMigrator.App.Views.Pages.HistoryPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -28,7 +28,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <ui:TextBox PlaceholderText="Rechercher une adresse email…" Icon="{ui:SymbolIcon Search24}"
+            <ui:TextBox PlaceholderText="Rechercher une adresse email…" Icon="{ui:SymbolIcon Search24, FontSize=22, Filled=True}"
                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}" AutomationProperties.Name="Rechercher dans l'historique" />
             <ComboBox Grid.Column="2" ItemsSource="{Binding StatusFilters}" DisplayMemberPath="Label" SelectedItem="{Binding StatusFilter}" AutomationProperties.Name="Filtrer par statut" />
             <ComboBox Grid.Column="4" ItemsSource="{Binding PeriodFilters}" DisplayMemberPath="Label" SelectedItem="{Binding PeriodFilter}" AutomationProperties.Name="Filtrer par date" />
@@ -93,7 +93,7 @@
                                 <TextBlock Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Right" Style="{StaticResource Text.CaptionNumber}" FontSize="13"
                                            Text="{Binding Duration, Converter={StaticResource Duration}}" />
                                 <c:StatusBadge Grid.Column="5" Margin="24,0,0,0" Status="{Binding Status}" />
-                                <ui:SymbolIcon Grid.Column="6" Symbol="ChevronRight24" FontSize="16" Foreground="{DynamicResource Brush.Text.Secondary}" />
+                                <ui:SymbolIcon Filled="True" Grid.Column="6" Symbol="ChevronRight24" FontSize="22" Foreground="{DynamicResource Brush.Text.Secondary}" />
                             </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -103,13 +103,13 @@
                 <StackPanel Grid.Row="1" Margin="0,48" HorizontalAlignment="Center" VerticalAlignment="Center"
                             Visibility="{Binding VisibleCount, Converter={StaticResource HasValueToVisibility}, ConverterParameter=invert}">
                     <Border Width="72" Height="72" CornerRadius="36" HorizontalAlignment="Center" Background="{DynamicResource Brush.AccentSoft}">
-                        <ui:SymbolIcon Symbol="History24" FontSize="32" Foreground="{DynamicResource Brush.Accent}" />
+                        <ui:SymbolIcon Filled="True" Symbol="History24" FontSize="32" Foreground="{DynamicResource Brush.Accent}" />
                     </Border>
                     <TextBlock Margin="0,16,0,4" HorizontalAlignment="Center" Style="{StaticResource Text.CardTitle}" Text="Aucune migration ne correspond" />
                     <TextBlock HorizontalAlignment="Center" Style="{StaticResource Text.BodySecondary}" Text="Modifiez la recherche ou les filtres, ou lancez une nouvelle migration." />
                     <StackPanel Margin="0,16,0,0" HorizontalAlignment="Center" Orientation="Horizontal">
-                        <ui:Button Appearance="Secondary" Command="{Binding ClearFiltersCommand}" Icon="{ui:SymbolIcon FilterDismiss24}" Content="Effacer les filtres" />
-                        <ui:Button Margin="8,0,0,0" Appearance="Primary" Command="{Binding NewMigrationCommand}" Icon="{ui:SymbolIcon Add24}" Content="Nouvelle migration" />
+                        <ui:Button Appearance="Secondary" Command="{Binding ClearFiltersCommand}" Icon="{ui:SymbolIcon FilterDismiss24, FontSize=22, Filled=True}" Content="Effacer les filtres" />
+                        <ui:Button Margin="8,0,0,0" Appearance="Primary" Command="{Binding NewMigrationCommand}" Icon="{ui:SymbolIcon Add24, FontSize=22, Filled=True}" Content="Nouvelle migration" />
                     </StackPanel>
                 </StackPanel>
             </Grid>

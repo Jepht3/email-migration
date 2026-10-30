@@ -1,4 +1,4 @@
-﻿<Application x:Class="MailMigrator.App.App"
+<Application x:Class="MailMigrator.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -16,6 +16,12 @@
                 <ResourceDictionary Source="Themes/Controls.xaml" />
                 <ResourceDictionary Source="Assets/Logo.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="ui:SymbolIcon">
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="Filled" Value="True" />
+                <EventSetter Event="Loaded" Handler="OnSymbolIconLoaded" />
+            </Style>
 
             <conv:JobColorConverter x:Key="JobColor" />
             <conv:InitialsConverter x:Key="Initials" />

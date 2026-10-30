@@ -43,8 +43,8 @@ public sealed partial class ReportViewModel : ObservableObject
     private JobReport? _report;
 
     public ObservableCollection<FolderReport> Folders { get; } = [];
-    public ObservableCollection<MessageReportLine> Messages { get; } = [];
-    public ICollectionView MessagesView { get; }
+    public IReadOnlyList<MessageReportLine> Messages { get; private set; } = [];
+    public ICollectionView MessagesView { get; private set; }
 
     public IReadOnlyList<FilterOption<MessageStatus?>> StatusFilters { get; } =
     [
@@ -99,21 +99,29 @@ public sealed partial class ReportViewModel : ObservableObject
         ? Format.Number(e.Copied / e.Duration.TotalMinutes)
         : "—";
 
-    public void Load(Guid id)
+    public async Task LoadAsync(Guid id)
     {
-        var report = _history.GetReport(id);
+        var report = await Task.Run(() => _history.GetReport(id));
+        _report = report;
         Folders.Clear();
-        Messages.Clear();
+        // Replace the collection once: individual additions notify the WPF view
+        // for every message and make large reports expensive to open.
+        Messages = report?.Messages ?? [];
+        MessagesView = CollectionViewSource.GetDefaultView(Messages);
+        MessagesView.Filter = Matches;
+        OnPropertyChanged(nameof(Messages));
+        OnPropertyChanged(nameof(MessagesView));
+        SearchText = "";
+        StatusFilter = StatusFilters[0];
+        RefreshFilter();
         if (report is null)
         {
             Entry = null;
+            OnPropertyChanged(nameof(TotalGap));
+            OnPropertyChanged(nameof(Progress));
             return;
         }
         foreach (var f in report.Folders) Folders.Add(f);
-        foreach (var m in report.Messages) Messages.Add(m);
-        SearchText = "";
-        StatusFilter = StatusFilters[0];
-        _report = report;
         Entry = report.Summary;
         OnPropertyChanged(nameof(TotalGap));
         OnPropertyChanged(nameof(Progress));

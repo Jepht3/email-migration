@@ -35,7 +35,12 @@ public partial class ShellWindow : FluentWindow
             foreach (var item in RootNavigation.MenuItems.OfType<NavigationViewItem>()
                          .Concat(RootNavigation.FooterMenuItems.OfType<NavigationViewItem>()))
             {
-                if (item.Icon is SymbolIcon icon) icon.Filled = item.IsActive;
+                // WPF UI assigns its top-navigation template locally, which takes
+                // precedence over the style. Apply our pill template after navigation.
+                var style = (Style)FindResource("Navigation.Pill");
+                item.Template = (System.Windows.Controls.ControlTemplate)style.Setters
+                    .OfType<Setter>().Single(s => s.Property == System.Windows.Controls.Control.TemplateProperty).Value;
+                if (item.Icon is SymbolIcon icon) icon.Filled = true;
             }
         };
         Loaded += (_, _) => RootNavigation.Navigate(typeof(HomePage));
