@@ -100,7 +100,10 @@
             </ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
 
-        <ui:TitleBar x:Name="AppTitleBar" Grid.Row="0" Title="LEWEBMAX Mail Migrator" Background="#F6F2FF" Foreground="#79688E">
+        <!-- The lavender title bar stays light in both themes; its window buttons
+             need their own foreground (independent of the title text). -->
+        <ui:TitleBar x:Name="AppTitleBar" Grid.Row="0" Title="LEWEBMAX Mail Migrator"
+                     Background="#F6F2FF" Foreground="#79688E" ButtonsForeground="#38205C">
             <ui:TitleBar.Icon>
                 <ui:ImageIcon Source="{StaticResource Logo.Mark}" />
             </ui:TitleBar.Icon>
